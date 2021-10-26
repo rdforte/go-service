@@ -24,13 +24,8 @@ func StatusOK(res http.ResponseWriter) {
 	json.NewEncoder(res).Encode(Status{"OK"})
 }
 
-type apiHandler struct{}
-
-func (apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	reg, _ := regexp.Compile(`\/\w*\d*`)
-	mainPath := reg.FindString(req.URL.String())
-	fmt.Println(mainPath)
-	StatusNotFound(res)
+type apiHandler struct {
+	app *web.App
 }
 
 func starshipGroup(a *web.App) {
@@ -42,17 +37,28 @@ func starshipGroup(a *web.App) {
 	})
 }
 
+func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	reg, _ := regexp.Compile(`\/\w*\d*`)
+	mainPath := reg.FindString(req.URL.String())
+	// const handler = a.app.Router[mainPath]
+	fmt.Println(mainPath)
+	StatusNotFound(res)
+}
+
 /**
 setup the Mux and direct network requests
 */
 func CreateApp(log *log.Logger) http.Handler {
 	app := web.NewApp()
 	// Checks
-	check := Check{log}
-	app.HandleFunc("/test", check.Readiness)
+	// check := Check{log}
+	// app.HandleFunc("/test", check.Readiness)
 	starshipGroup(app)
-	// Handlers
-	app.Handle("/user", &UserHandler{log})
-	app.Handle("/", apiHandler{})
+	app.Get("/", func(res http.ResponseWriter, req *http.Request) {
+		res.Write([]byte("this is the home route"))
+	})
+	// // Handlers
+	// app.Handle("/user", &UserHandler{log})
+	// app.Handle("/", &apiHandler{app})
 	return app
 }

@@ -2,7 +2,9 @@ package web
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"regexp"
 )
 
 type Status struct {
@@ -11,12 +13,12 @@ type Status struct {
 
 type Handler func(res http.ResponseWriter, req *http.Request)
 
-type route struct {
+type Route struct {
 	method          map[string]Handler
 	notFoundHandler Handler
 }
 
-func (r *route) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+func (r *Route) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	if handler, ok := r.method[req.Method]; !ok {
 		r.notFoundHandler(res, req)
 	} else {
@@ -27,7 +29,7 @@ func (r *route) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 type App struct {
 	*http.ServeMux
 	notFoundHandler Handler
-	router          map[string]*route // 1st key = url, 2nd key = http method
+	Router          map[string]*Route // 1st key = url, 2nd key = http method
 }
 
 func createDefaultNotFoundHandler() Handler {
@@ -37,25 +39,54 @@ func createDefaultNotFoundHandler() Handler {
 	}
 }
 
+type apiHandler struct {
+	app *App
+}
+
+func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	reg, _ := regexp.Compile(`\/\w*\d*`)
+	mainPath := reg.FindString(req.URL.String())
+	// if route, ok := a.app.Router[mainPath]; ok {
+	// 	if handler, ok := route.method[req.Method]; ok {
+	// 		handler(res, req)
+	// 		return
+	// 	}
+	// }
+	for key, route := range a.app.Router {
+		if match, _ := regexp.MatchString(key, req.URL.String()); match {
+			if handler, ok := route.method[req.Method]; ok {
+				handler(res, req)
+				return
+			}
+		}
+		// pathReg, _ := regexp.Compile(key)
+		fmt.Println(key)
+	}
+	fmt.Println(mainPath)
+	a.app.notFoundHandler(res, req)
+}
+
 func NewApp() *App {
-	return &App{
+	app := &App{
 		http.NewServeMux(),
 		createDefaultNotFoundHandler(),
-		make(map[string]*route),
+		make(map[string]*Route),
 	}
+	app.Handle("/", &apiHandler{app})
+	return app
 }
 
 func (a *App) SetupRoute(path, method string, handler Handler) {
-	if _, ok := a.router[path]; !ok {
-		a.router[path] = &route{
+	if _, ok := a.Router[path]; !ok {
+		a.Router[path] = &Route{
 			method:          make(map[string]Handler),
 			notFoundHandler: a.notFoundHandler,
 		}
-		a.router[path].method[method] = handler
-		a.Handle(path, a.router[path])
+		a.Router[path].method[method] = handler
+		// a.Handle(path, a.Router[path])
 	}
 
-	a.router[path].method[method] = handler
+	a.Router[path].method[method] = handler
 }
 
 func (a *App) Get(path string, handler Handler) {
