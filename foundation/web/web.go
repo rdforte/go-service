@@ -44,25 +44,16 @@ type apiHandler struct {
 }
 
 func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	reg, _ := regexp.Compile(`\/\w*\d*`)
-	mainPath := reg.FindString(req.URL.String())
-	// if route, ok := a.app.Router[mainPath]; ok {
-	// 	if handler, ok := route.method[req.Method]; ok {
-	// 		handler(res, req)
-	// 		return
-	// 	}
-	// }
 	for key, route := range a.app.Router {
-		if match, _ := regexp.MatchString(key, req.URL.String()); match {
+		regPath := regexp.MustCompile(key)
+		if match := regPath.Match([]byte(req.URL.String())); match {
 			if handler, ok := route.method[req.Method]; ok {
 				handler(res, req)
 				return
 			}
 		}
-		// pathReg, _ := regexp.Compile(key)
 		fmt.Println(key)
 	}
-	fmt.Println(mainPath)
 	a.app.notFoundHandler(res, req)
 }
 

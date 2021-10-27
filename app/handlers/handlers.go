@@ -54,8 +54,11 @@ func CreateApp(log *log.Logger) http.Handler {
 	// check := Check{log}
 	// app.HandleFunc("/test", check.Readiness)
 	starshipGroup(app)
-	app.Get("/", func(res http.ResponseWriter, req *http.Request) {
+	app.Get("^\\/$", func(res http.ResponseWriter, req *http.Request) {
 		res.Write([]byte("this is the home route"))
+	})
+	app.Get("\\/users\\/[a-z0-9]+", func(res http.ResponseWriter, req *http.Request) {
+		res.Write([]byte("this is the user route"))
 	})
 	// // Handlers
 	// app.Handle("/user", &UserHandler{log})
