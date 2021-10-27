@@ -16,6 +16,7 @@ type Handler func(res http.ResponseWriter, req *http.Request)
 type Route struct {
 	method          map[string]Handler
 	notFoundHandler Handler
+	regPath         *regexp.Regexp
 }
 
 func (r *Route) ServeHTTP(res http.ResponseWriter, req *http.Request) {
@@ -44,15 +45,15 @@ type apiHandler struct {
 }
 
 func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	for key, route := range a.app.Router {
-		regPath := regexp.MustCompile(key)
-		if match := regPath.Match([]byte(req.URL.String())); match {
+	for _, route := range a.app.Router {
+		// regPath := regexp.MustCompile(key)
+		if match := route.regPath.Match([]byte(req.URL.String())); match {
 			if handler, ok := route.method[req.Method]; ok {
 				handler(res, req)
 				return
 			}
 		}
-		fmt.Println(key)
+		// fmt.Println(key)
 	}
 	a.app.notFoundHandler(res, req)
 }
@@ -68,10 +69,15 @@ func NewApp() *App {
 }
 
 func (a *App) SetupRoute(path, method string, handler Handler) {
+	// Todo TESTING building routes
+	regBuilder(path)
+
 	if _, ok := a.Router[path]; !ok {
+		regPath := regexp.MustCompile(path)
 		a.Router[path] = &Route{
 			method:          make(map[string]Handler),
 			notFoundHandler: a.notFoundHandler,
+			regPath:         regPath,
 		}
 		a.Router[path].method[method] = handler
 		// a.Handle(path, a.Router[path])
@@ -99,4 +105,18 @@ func (a *App) Delete(path string, handler Handler) {
 // Call before all routes you would like to set custom error messages
 func (a *App) NotFound(handler func(res http.ResponseWriter, req *http.Request)) {
 	a.notFoundHandler = handler
+}
+
+func regBuilder(path string) *regexp.Regexp {
+	fmt.Println(len(path))
+	paramRegex := regexp.MustCompile(`\/:[\d\w]+([^/])`)
+	pathRegex := regexp.MustCompile(`\/[^:][\d\w]+([^/])`)
+	params := paramRegex.FindAllIndex([]byte(path), -1)
+	paths := pathRegex.FindAllIndex([]byte(path), -1)
+	fmt.Println(paths)
+	fmt.Println(params)
+	for _, val := range paths {
+		fmt.Println(path[val[0]:val[1]])
+	}
+	return paramRegex
 }
