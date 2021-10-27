@@ -116,6 +116,7 @@ func regBuilder(path string) *regexp.Regexp {
 	fmt.Println(paths)
 	fmt.Println(params)
 	for _, val := range paths {
+		absolutePath := path[val[0]:val[1]] // this is the path that we will use to construct the regex
 		fmt.Println(path[val[0]:val[1]])
 	}
 	return paramRegex
