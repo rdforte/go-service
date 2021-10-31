@@ -18,6 +18,7 @@ type Route struct {
 	method          map[string]Handler
 	notFoundHandler Handler
 	regPath         *regexp.Regexp
+	pathParam       pathParam
 }
 
 func (r *Route) ServeHTTP(res http.ResponseWriter, req *http.Request) {
@@ -50,6 +51,7 @@ func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		// regPath := regexp.MustCompile(key)
 		if match := route.regPath.Match([]byte(req.URL.String())); match {
 			if handler, ok := route.method[req.Method]; ok {
+				// req.Context() // TODO ======================================================
 				handler(res, req)
 				return
 			}
@@ -71,14 +73,16 @@ func NewApp() *App {
 
 func (a *App) SetupRoute(path, method string, handler Handler) {
 	// Todo TESTING building routes
-	rp := regBuilder(path)
+	rgx, pp := regBuilder(path)
+	fmt.Println(pp)
 
 	if _, ok := a.Router[path]; !ok {
-		regPath := regexp.MustCompile(rp)
+		regPath := rgx
 		a.Router[path] = &Route{
 			method:          make(map[string]Handler),
 			notFoundHandler: a.notFoundHandler,
 			regPath:         regPath,
+			pathParam:       pp,
 		}
 		a.Router[path].method[method] = handler
 		// a.Handle(path, a.Router[path])
@@ -108,7 +112,7 @@ func (a *App) NotFound(handler func(res http.ResponseWriter, req *http.Request))
 	a.notFoundHandler = handler
 }
 
-func regBuilder(path string) string {
+func regBuilder(path string) (rgx *regexp.Regexp, pp pathParam) {
 	fmt.Println(len(path))
 	paramRegex := regexp.MustCompile(`\/:[\d\w]+([^/])`)
 	pathRegex := regexp.MustCompile(`\/[^:][\d\w]+([^/])`)
@@ -141,21 +145,33 @@ func regBuilder(path string) string {
 	})
 
 	regPath := "^"
+	pp = pathParam{
+		[]int{},
+		[]string{},
+	}
 	for i, val := range pathChunks {
 		if val.pathType == "path" {
 			regPath += path[val.position[0]:val.position[1]]
 		} else if val.pathType == "param" {
 			regPath += `/[\d\w_-]+`
+			pp.positions = append(pp.positions, i)
+			key := regexp.MustCompile(`[^\/:][\w\d-_]+`).Find([]byte(path[val.position[0]:val.position[1]]))
+			pp.keys = append(pp.keys, string(key))
 		}
 		if i == len(pathChunks)-1 {
 			regPath += "$"
 		}
 	}
 	fmt.Println(regPath)
-	return regPath
+	return regexp.MustCompile(regPath), pp
 }
 
 type pathChunk struct {
 	position []int
 	pathType string //path | param
+}
+
+type pathParam struct {
+	positions []int    // the index in the path for which the param is located
+	keys      []string // the keys associated with the param
 }
