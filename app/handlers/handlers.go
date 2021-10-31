@@ -61,7 +61,7 @@ func CreateApp(log *log.Logger) http.Handler {
 		res.Write([]byte("this is the user route"))
 	})
 	// // Handlers
-	// app.Handle("/user", &UserHandler{log})
+	app.Handle("/user", &UserHandler{log})
 	// app.Handle("/", &apiHandler{app})
 	return app
 }
