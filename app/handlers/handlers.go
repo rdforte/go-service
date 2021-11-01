@@ -28,14 +28,14 @@ type apiHandler struct {
 	app *web.App
 }
 
-func starshipGroup(a *web.App) {
-	a.Get("/starship", func(res http.ResponseWriter, req *http.Request) {
-		res.Write([]byte("yo bro this is a get"))
-	})
-	a.Post("/starship", func(res http.ResponseWriter, req *http.Request) {
-		res.Write([]byte("yo bro this is a post"))
-	})
-}
+// func starshipGroup(a *web.App) {
+// 	a.Get("/starship", func(ctx context.Context, res http.ResponseWriter, req *http.Request) {
+// 		res.Write([]byte("yo bro this is a get"))
+// 	})
+// 	a.Post("/starship", func(ctx context.Context, res http.ResponseWriter, req *http.Request) {
+// 		res.Write([]byte("yo bro this is a post"))
+// 	})
+// }
 
 func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	reg, _ := regexp.Compile(`\/\w*\d*`)
@@ -57,8 +57,13 @@ func CreateApp(log *log.Logger) http.Handler {
 	// app.Get("^\\/$", func(res http.ResponseWriter, req *http.Request) {
 	// 	res.Write([]byte("this is the home route"))
 	// })
-	app.Get("/users/:id/spaceship", func(res http.ResponseWriter, req *http.Request) {
-		res.Write([]byte("this is the user route"))
+	app.Get("/users/:id/spaceship/:type", func(ctx web.Context, res http.ResponseWriter, req *http.Request) {
+		userId := ctx.Params["id"]
+		spaceship := ctx.Params["type"]
+		res.Write([]byte(userId + " " + spaceship))
+	})
+	app.NotFound(func(ctx web.Context, res http.ResponseWriter, req *http.Request) {
+		res.Write([]byte("cant find the route"))
 	})
 	// // Handlers
 	app.Handle("/user", &UserHandler{log})

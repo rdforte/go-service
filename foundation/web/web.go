@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -12,20 +13,20 @@ type Status struct {
 	Status string `json:"status"`
 }
 
-type Handler func(res http.ResponseWriter, req *http.Request)
+type Handler func(ctx Context, res http.ResponseWriter, req *http.Request)
 
 type Route struct {
 	method          map[string]Handler
 	notFoundHandler Handler
 	regPath         *regexp.Regexp
-	pathParam       pathParam
+	pathParam       *pathParam
 }
 
 func (r *Route) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	if handler, ok := r.method[req.Method]; !ok {
-		r.notFoundHandler(res, req)
+		r.notFoundHandler(Context{}, res, req)
 	} else {
-		handler(res, req)
+		handler(Context{}, res, req)
 	}
 }
 
@@ -36,9 +37,21 @@ type App struct {
 }
 
 func createDefaultNotFoundHandler() Handler {
-	return func(res http.ResponseWriter, req *http.Request) {
+	return func(ctx Context, res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusNotFound)
 		json.NewEncoder(res).Encode(Status{"NOT FOUND"})
+	}
+}
+
+type Context struct {
+	context.Context
+	Params map[string]string
+}
+
+func createNewReqCtx(ctx context.Context) Context {
+	return Context{
+		ctx,
+		map[string]string{},
 	}
 }
 
@@ -48,17 +61,25 @@ type apiHandler struct {
 
 func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 	for _, route := range a.app.Router {
-		// regPath := regexp.MustCompile(key)
 		if match := route.regPath.Match([]byte(req.URL.String())); match {
 			if handler, ok := route.method[req.Method]; ok {
-				// req.Context() // TODO ======================================================
-				handler(res, req)
+				ctx := createNewReqCtx(req.Context())
+				if len(route.pathParam.keys) > 0 {
+					pathChunks := route.pathParam.pathSegmentRgx.FindAllString(req.URL.String(), -1)
+					fmt.Println(pathChunks)
+					for i, p := range route.pathParam.positions {
+						param := pathChunks[p]
+						key := route.pathParam.keys[i]
+						ctx.Params[key] = param
+					}
+
+				}
+				handler(ctx, res, req)
 				return
 			}
 		}
-		// fmt.Println(key)
 	}
-	a.app.notFoundHandler(res, req)
+	a.app.notFoundHandler(Context{}, res, req)
 }
 
 func NewApp() *App {
@@ -72,7 +93,6 @@ func NewApp() *App {
 }
 
 func (a *App) SetupRoute(path, method string, handler Handler) {
-	// Todo TESTING building routes
 	rgx, pp := regBuilder(path)
 	fmt.Println(pp)
 
@@ -85,7 +105,6 @@ func (a *App) SetupRoute(path, method string, handler Handler) {
 			pathParam:       pp,
 		}
 		a.Router[path].method[method] = handler
-		// a.Handle(path, a.Router[path])
 	}
 
 	a.Router[path].method[method] = handler
@@ -108,11 +127,11 @@ func (a *App) Delete(path string, handler Handler) {
 }
 
 // Call before all routes you would like to set custom error messages
-func (a *App) NotFound(handler func(res http.ResponseWriter, req *http.Request)) {
+func (a *App) NotFound(handler func(ctx Context, res http.ResponseWriter, req *http.Request)) {
 	a.notFoundHandler = handler
 }
 
-func regBuilder(path string) (rgx *regexp.Regexp, pp pathParam) {
+func regBuilder(path string) (rgx *regexp.Regexp, pp *pathParam) {
 	fmt.Println(len(path))
 	paramRegex := regexp.MustCompile(`\/:[\d\w]+([^/])`)
 	pathRegex := regexp.MustCompile(`\/[^:][\d\w]+([^/])`)
@@ -123,7 +142,6 @@ func regBuilder(path string) (rgx *regexp.Regexp, pp pathParam) {
 
 	pathChunks := []pathChunk{}
 	for _, val := range paths {
-		// absolutePath := path[val[0]:val[1]] // this is the path that we will use to construct the regex
 		chunk := pathChunk{
 			val,
 			"path",
@@ -132,7 +150,6 @@ func regBuilder(path string) (rgx *regexp.Regexp, pp pathParam) {
 		// fmt.Println(absolutePath)
 	}
 	for _, val := range params {
-		// absolutePath := path[val[0]:val[1]] // this is the path that we will use to construct the regex
 		chunk := pathChunk{
 			val,
 			"param",
@@ -145,7 +162,8 @@ func regBuilder(path string) (rgx *regexp.Regexp, pp pathParam) {
 	})
 
 	regPath := "^"
-	pp = pathParam{
+	pp = &pathParam{
+		*regexp.MustCompile(`[^\/:][\w\d-_]+`),
 		[]int{},
 		[]string{},
 	}
@@ -172,6 +190,7 @@ type pathChunk struct {
 }
 
 type pathParam struct {
-	positions []int    // the index in the path for which the param is located
-	keys      []string // the keys associated with the param
+	pathSegmentRgx regexp.Regexp
+	positions      []int    // the index in the path for which the param is located
+	keys           []string // the keys associated with the param
 }
