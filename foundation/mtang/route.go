@@ -52,12 +52,20 @@ func buildRoute(path string) *route {
 
 	pathChunks := buildPathChunks(paths, params)
 
-	regPath := "^" // the regular expression path to associate with the url
+	// the regular expression path to associate with the url
+	var regPath string
+	if path == "/" {
+		regPath = "^/$"
+	} else {
+		regPath = "^"
+	}
+
 	pp := &pathParam{
 		*regexp.MustCompile(`[^\/:][\w\d-_]+`),
 		[]int{},
 		[]string{},
 	}
+
 	for i, chunk := range pathChunks {
 		if chunk.pathType == "path" {
 			regPath += path[chunk.position[0]:chunk.position[1]]
