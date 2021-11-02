@@ -2,9 +2,7 @@ package mtang
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"regexp"
 )
 
 type Status struct {
@@ -13,16 +11,10 @@ type Status struct {
 
 type Handler func(ctx Context, res http.ResponseWriter, req *http.Request)
 
-type Route struct {
-	method    map[string]Handler
-	regPath   *regexp.Regexp
-	pathParam *pathParam
-}
-
 type Router struct {
 	*http.ServeMux
 	notFoundHandler Handler
-	router          map[string]*Route // 1st key = url, 2nd key = http method
+	routes          map[string]*route // 1st key = route, 2nd key = route information associated with the url
 }
 
 func createDefaultNotFoundHandler() Handler {
@@ -32,51 +24,49 @@ func createDefaultNotFoundHandler() Handler {
 	}
 }
 
-type apiHandler struct {
-	app *Router
+type entryPoint struct {
+	router *Router
 }
 
-func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	fmt.Println(req.URL.String())
-	for _, route := range a.app.router {
+func (e *entryPoint) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	for _, route := range e.router.routes {
 		if match := route.regPath.Match([]byte(req.URL.String())); match {
 			if handler, ok := route.method[req.Method]; ok {
 				ctx := createNewReqCtx(req)
 				if len(route.pathParam.keys) > 0 {
 					pathChunks := route.pathParam.pathSegmentRgx.FindAllString(req.URL.String(), -1)
-					fmt.Println(pathChunks)
 					for i, p := range route.pathParam.positions {
 						param := pathChunks[p]
 						key := route.pathParam.keys[i]
 						ctx.params[key] = param
 					}
-
 				}
 				handler(ctx, res, req)
 				return
 			}
 		}
 	}
-	a.app.notFoundHandler(Context{}, res, req)
+	e.router.notFoundHandler(Context{}, res, req)
 }
 
+// Creates a new Router
 func NewRouter() *Router {
-	app := &Router{
+	router := &Router{
 		http.NewServeMux(),
 		createDefaultNotFoundHandler(),
-		make(map[string]*Route),
+		make(map[string]*route),
 	}
-	app.Handle("/", &apiHandler{app})
-	return app
+	router.Handle("/", &entryPoint{router})
+	return router
 }
 
 func (r *Router) SetupRoute(path, method string, handler Handler) {
-	if _, ok := r.router[path]; !ok {
-		r.router[path] = buildRoute(path)
-		r.router[path].method[method] = handler
+	if _, ok := r.routes[path]; !ok {
+		r.routes[path] = buildRoute(path)
+		r.routes[path].method[method] = handler
 	}
 
-	r.router[path].method[method] = handler
+	r.routes[path].method[method] = handler
 }
 
 func (a *Router) Get(path string, handler Handler) {
@@ -95,18 +85,7 @@ func (r *Router) Delete(path string, handler Handler) {
 	r.SetupRoute(path, http.MethodDelete, handler)
 }
 
-// Call before all routes you would like to set custom error messages
+// overrides the default NotFound handler
 func (r *Router) NotFound(handler func(ctx Context, res http.ResponseWriter, req *http.Request)) {
 	r.notFoundHandler = handler
-}
-
-type pathChunk struct {
-	position []int
-	pathType string //path | param
-}
-
-type pathParam struct {
-	pathSegmentRgx regexp.Regexp
-	positions      []int    // the index in the path for which the param is located
-	keys           []string // the keys associated with the param
 }
