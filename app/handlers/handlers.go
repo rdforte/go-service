@@ -2,12 +2,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"regexp"
 
-	"github.com/rdforte/go-service/foundation/web"
+	"github.com/rdforte/go-service/foundation/mtang"
 )
 
 type Status struct {
@@ -24,49 +22,19 @@ func StatusOK(res http.ResponseWriter) {
 	json.NewEncoder(res).Encode(Status{"OK"})
 }
 
-type apiHandler struct {
-	app *web.App
-}
-
-// func starshipGroup(a *web.App) {
-// 	a.Get("/starship", func(ctx context.Context, res http.ResponseWriter, req *http.Request) {
-// 		res.Write([]byte("yo bro this is a get"))
-// 	})
-// 	a.Post("/starship", func(ctx context.Context, res http.ResponseWriter, req *http.Request) {
-// 		res.Write([]byte("yo bro this is a post"))
-// 	})
-// }
-
-func (a *apiHandler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	reg, _ := regexp.Compile(`\/\w*\d*`)
-	mainPath := reg.FindString(req.URL.String())
-	// const handler = a.app.Router[mainPath]
-	fmt.Println(mainPath)
-	StatusNotFound(res)
-}
-
 /**
 setup the Mux and direct network requests
 */
 func CreateApp(log *log.Logger) http.Handler {
-	app := web.NewApp()
-	// Checks
-	// check := Check{log}
-	// app.HandleFunc("/test", check.Readiness)
-	// starshipGroup(app)
-	// app.Get("^\\/$", func(res http.ResponseWriter, req *http.Request) {
-	// 	res.Write([]byte("this is the home route"))
-	// })
-	app.Get("/users/:id/spaceship/:type", func(ctx web.Context, res http.ResponseWriter, req *http.Request) {
-		userId := ctx.Params["id"]
-		spaceship := ctx.Params["type"]
-		res.Write([]byte(userId + " " + spaceship))
+	app := mtang.NewRouter()
+	app.Get("/users/:id/spaceship/:type", func(ctx mtang.Context, res http.ResponseWriter, req *http.Request) {
+		query := ctx.GetQuery("key")
+		userId := ctx.GetParam("id")
+		spaceship := ctx.GetParam("type")
+		res.Write([]byte(userId + " " + spaceship + " " + query))
 	})
-	app.NotFound(func(ctx web.Context, res http.ResponseWriter, req *http.Request) {
+	app.NotFound(func(ctx mtang.Context, res http.ResponseWriter, req *http.Request) {
 		res.Write([]byte("cant find the route"))
 	})
-	// // Handlers
-	app.Handle("/user", &UserHandler{log})
-	// app.Handle("/", &apiHandler{app})
 	return app
 }
