@@ -2,6 +2,7 @@ package mtang
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 )
 
@@ -24,12 +25,10 @@ func createDefaultNotFoundHandler() Handler {
 	}
 }
 
-type entryPoint struct {
-	router *Router
-}
-
-func (e *entryPoint) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	for _, route := range e.router.routes {
+// All requests will run through here
+func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
+	fmt.Println("hit")
+	for _, route := range r.routes {
 		if match := route.regPath.Match([]byte(req.URL.String())); match {
 			if handler, ok := route.method[req.Method]; ok {
 				ctx := createNewReqCtx(req)
@@ -46,7 +45,7 @@ func (e *entryPoint) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	e.router.notFoundHandler(Context{}, res, req)
+	r.notFoundHandler(Context{}, res, req)
 }
 
 // Creates a new Router
@@ -56,8 +55,16 @@ func NewRouter() *Router {
 		createDefaultNotFoundHandler(),
 		make(map[string]*route),
 	}
-	router.Handle("/", &entryPoint{router})
 	return router
+}
+
+func (r *Router) Handle(path string, handler http.Handler) {
+	// todo setup handler
+}
+
+// func (r *Router) Han
+func (r *Router) HandleFunc(path string, handler Handler) {
+	// todo setup handleFunc
 }
 
 func (r *Router) SetupRoute(path, method string, handler Handler) {
@@ -86,6 +93,6 @@ func (r *Router) Delete(path string, handler Handler) {
 }
 
 // overrides the default NotFound handler
-func (r *Router) NotFound(handler func(ctx Context, res http.ResponseWriter, req *http.Request)) {
+func (r *Router) NotFoundHandler(handler func(ctx Context, res http.ResponseWriter, req *http.Request)) {
 	r.notFoundHandler = handler
 }
