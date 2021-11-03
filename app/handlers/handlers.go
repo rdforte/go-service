@@ -52,7 +52,7 @@ func CreateApp(log *log.Logger) http.Handler {
 
 	app.Handle("/play", &testHandler{log})
 
-	app.NotFoundHandler(func(ctx mtang.Context, res http.ResponseWriter, req *http.Request) {
+	app.NotFound(func(ctx mtang.Context, res http.ResponseWriter, req *http.Request) {
 		res.Write([]byte("cant find the route"))
 	})
 

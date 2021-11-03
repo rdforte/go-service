@@ -107,10 +107,30 @@ func (r *Router) Patch(path string, handler Handler) {
 	r.setupRoute(path, http.MethodPatch, handler)
 }
 
+func (r *Router) Put(path string, handler Handler) {
+	r.setupRoute(path, http.MethodPut, handler)
+}
+
 func (r *Router) Delete(path string, handler Handler) {
 	r.setupRoute(path, http.MethodDelete, handler)
 }
 
-func (r *Router) NotFoundHandler(handler func(ctx Context, res http.ResponseWriter, req *http.Request)) {
+func (r *Router) Head(path string, handler Handler) {
+	r.setupRoute(path, http.MethodHead, handler)
+}
+
+func (r *Router) Connect(path string, handler Handler) {
+	r.setupRoute(path, http.MethodConnect, handler)
+}
+
+func (r *Router) Options(path string, handler Handler) {
+	r.setupRoute(path, http.MethodOptions, handler)
+}
+
+func (r *Router) Trace(path string, handler Handler) {
+	r.setupRoute(path, http.MethodTrace, handler)
+}
+
+func (r *Router) NotFound(handler func(ctx Context, res http.ResponseWriter, req *http.Request)) {
 	r.notFoundHandler = handler
 }
