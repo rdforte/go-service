@@ -55,5 +55,6 @@ func CreateApp(log *log.Logger) http.Handler {
 	app.NotFoundHandler(func(ctx mtang.Context, res http.ResponseWriter, req *http.Request) {
 		res.Write([]byte("cant find the route"))
 	})
+
 	return app
 }

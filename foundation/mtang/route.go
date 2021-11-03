@@ -45,8 +45,8 @@ func buildPathChunks(paths, params [][]int) []pathChunk {
 }
 
 func buildRoute(path string) *route {
-	paramRegex := regexp.MustCompile(`\/:[\d\w]+([^/])`)
-	pathRegex := regexp.MustCompile(`\/[^:][\d\w]+([^/])`)
+	paramRegex := regexp.MustCompile(`\/:[^/]+([^/])`)
+	pathRegex := regexp.MustCompile(`\/[^:][^/]+([^/])`)
 	params := paramRegex.FindAllIndex([]byte(path), -1)
 	paths := pathRegex.FindAllIndex([]byte(path), -1)
 
@@ -61,7 +61,7 @@ func buildRoute(path string) *route {
 	}
 
 	pp := &pathParam{
-		*regexp.MustCompile(`[^\/:][\w\d-_]+`),
+		*regexp.MustCompile(`[^\/:][^/]+`),
 		[]int{},
 		[]string{},
 	}
@@ -71,9 +71,9 @@ func buildRoute(path string) *route {
 			regPath += path[chunk.position[0]:chunk.position[1]]
 		}
 		if chunk.pathType == "param" {
-			regPath += `/[\d\w_-]+`
+			regPath += `/[^/]+`
 			pp.positions = append(pp.positions, i)
-			key := regexp.MustCompile(`[^\/:][\w\d-_]+`).Find([]byte(path[chunk.position[0]:chunk.position[1]]))
+			key := regexp.MustCompile(`[^\/:][^/]+`).Find([]byte(path[chunk.position[0]:chunk.position[1]]))
 			pp.keys = append(pp.keys, string(key))
 		}
 		if i == len(pathChunks)-1 {

@@ -2,7 +2,6 @@ package mtang
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 )
 
@@ -38,7 +37,6 @@ func createDefaultNotFoundHandler() Handler {
 
 // All requests will run through here
 func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
-	fmt.Println("hit")
 	for _, route := range r.routes {
 		if match := route.regPath.Match([]byte(req.URL.String())); match {
 
@@ -113,7 +111,6 @@ func (r *Router) Delete(path string, handler Handler) {
 	r.setupRoute(path, http.MethodDelete, handler)
 }
 
-// overrides the default NotFound handler
 func (r *Router) NotFoundHandler(handler func(ctx Context, res http.ResponseWriter, req *http.Request)) {
 	r.notFoundHandler = handler
 }
