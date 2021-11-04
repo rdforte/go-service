@@ -66,7 +66,7 @@ func (r *Router) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-	r.notFoundHandler(Context{}, res, req)
+	r.notFoundHandler(createNewReqCtx(req), res, req)
 }
 
 // Creates a new Router
