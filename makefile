@@ -49,6 +49,8 @@ kind-load:
 kind-apply:
 	cat zarf/k8s/base/service-pod/base-service.yaml | kubectl apply -f -
 
+kind-update: all kind-load kind-restart
+
 # get the status of the pods
 kind-status:
 	kubectl get nodes -o wide
