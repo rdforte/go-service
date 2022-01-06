@@ -1,0 +1,5 @@
+# Tell Kustomize to bring in the base service
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - ./base-service.yaml

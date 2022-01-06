@@ -15,8 +15,9 @@ run:
 
 VERSION := 1.0
 
-all: service
+build-all: service
 
+# Build the docker image.
 service:
 	docker build \
 		-f zarf/docker/dockerfile \
@@ -46,10 +47,21 @@ kind-load:
 	kind load docker-image service-amd64:$(VERSION) --name $(KIND_CLUSTER)
 
 # Tell K8s to apply the namespace to the deployment
+# kustomize will build the final yaml starting from the service-pod
 kind-apply:
-	cat zarf/k8s/base/service-pod/base-service.yaml | kubectl apply -f -
+	kustomize build zarf/k8s/kind/service-pod | kubectl apply -f -
 
-kind-update: all kind-load kind-restart
+kind-update: 
+	build-all kind-load kind-restart
+
+kind-restart: 
+	kubectl rollout restart deployment service-pod	
+
+# load in the new image to kind and then apply it
+kind-update-apply: build-all kind-load kind-apply
+
+kind-describe:
+	kubectl describe pod -l app=service
 
 # get the status of the pods
 kind-status:
@@ -60,3 +72,10 @@ kind-status:
 # get the logs for the service
 kind-logs:
 	kubectl logs -l app=service --all-containers=true -f --tail=100 --namespace=service-system
+
+# ======================================================
+# Module Support
+
+tidy:
+	go mod tidy
+	go mod vendor

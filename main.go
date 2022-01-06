@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"runtime"
 	"syscall"
+
+	_ "go.uber.org/automaxprocs"
 )
 
 var build = "develop"

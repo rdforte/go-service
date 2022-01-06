@@ -23,5 +23,5 @@ spec:
       hostNetwork: true
       terminationGracePeriodSeconds: 60
       containers:
-      - name: service-pod
+      - name: service-api
         image: service-amd64:1.0

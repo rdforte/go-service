@@ -5,12 +5,12 @@ ARG BUILD_DATE
 
 WORKDIR /service
 
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
+# COPY go.mod ./
+# COPY go.sum ./
+# RUN go mod download -> no longer need to run as we have vendor
 
 # Copy the source code into the container.
-COPY *.go ./
+COPY . ./
 
 RUN go build -ldflags "-X main.build=${BUILD_REF}"
 
