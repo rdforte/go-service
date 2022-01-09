@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"syscall"
 
+	// Automatically set GOMAXPROCS to match Linux container CPU quota.
 	_ "go.uber.org/automaxprocs"
 )
 

@@ -1,0 +1,10 @@
+# We dont want this to be copied into the container for when we build the binary.
+# It is not needed
+.git/
+.dockerignore
+.gitignore
+zarf/docker/
+zarf/k8s/
+LICENSE
+makefile
+README.md

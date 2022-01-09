@@ -15,13 +15,13 @@ run:
 
 VERSION := 1.0
 
-build-all: service
+build-all: sales-api
 
 # Build the docker image.
-service:
+sales-api:
 	docker build \
-		-f zarf/docker/dockerfile \
-		-t service-amd64:$(VERSION) \
+		-f zarf/docker/dockerfile.sales-api \
+		-t sales-api-amd64:$(VERSION) \
 		--build-arg BUILD_REF=$(VERSION) \
 		--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 		.
@@ -44,24 +44,24 @@ kind-down:
 
 # load our local images into the kind environment
 kind-load:
-	kind load docker-image service-amd64:$(VERSION) --name $(KIND_CLUSTER)
+	kind load docker-image sales-api-amd64:$(VERSION) --name $(KIND_CLUSTER)
 
 # Tell K8s to apply the namespace to the deployment
 # kustomize will build the final yaml starting from the service-pod
 kind-apply:
-	kustomize build zarf/k8s/kind/service-pod | kubectl apply -f -
+	kustomize build zarf/k8s/kind/sales-pod | kubectl apply -f -
 
 kind-update: 
 	build-all kind-load kind-restart
 
 kind-restart: 
-	kubectl rollout restart deployment service-pod	
+	kubectl rollout restart deployment sales-pod	
 
 # load in the new image to kind and then apply it
 kind-update-apply: build-all kind-load kind-apply
 
 kind-describe:
-	kubectl describe pod -l app=service
+	kubectl describe pod -l app=sales
 
 # get the status of the pods
 kind-status:
@@ -71,7 +71,7 @@ kind-status:
 
 # get the logs for the service
 kind-logs:
-	kubectl logs -l app=service --all-containers=true -f --tail=100 --namespace=service-system
+	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system
 
 # ======================================================
 # Module Support
