@@ -42,8 +42,10 @@ kind-up:
 kind-down:
 	kind delete cluster --name $(KIND_CLUSTER)
 
+# navigate into the kind/sales-pod and edit the image name to include the version
 # load our local images into the kind environment
 kind-load:
+	cd zarf/k8s/kind/sales-pod; kustomize edit set image sales-api-image=sales-api-amd64:$(VERSION)
 	kind load docker-image sales-api-amd64:$(VERSION) --name $(KIND_CLUSTER)
 
 # Tell K8s to apply the namespace to the deployment

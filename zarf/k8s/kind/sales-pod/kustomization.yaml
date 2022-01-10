@@ -4,3 +4,9 @@ resources:
 - ../../base/sales-pod/
 patchesStrategicMerge:
 - ./kind-sales-patch.yaml
+# look for the image with the name sales-api-image and rename it to sales-api-amd64.
+# NOTE: in the makefile when we run make kind-load we will edit the newTag variable to be that of the version in the makefile.
+images:
+- name: sales-api-image
+  newName: sales-api-amd64
+  newTag: "1.0"
