@@ -1,10 +1,14 @@
-# github.com/davecgh/go-spew v1.1.1
-## explicit
-# go.uber.org/automaxprocs v1.4.0
+# go.uber.org/atomic v1.7.0
 ## explicit; go 1.13
-go.uber.org/automaxprocs
-go.uber.org/automaxprocs/internal/cgroups
-go.uber.org/automaxprocs/internal/runtime
-go.uber.org/automaxprocs/maxprocs
-# gopkg.in/yaml.v2 v2.4.0
-## explicit; go 1.15
+go.uber.org/atomic
+# go.uber.org/multierr v1.6.0
+## explicit; go 1.12
+go.uber.org/multierr
+# go.uber.org/zap v1.20.0
+## explicit; go 1.13
+go.uber.org/zap
+go.uber.org/zap/buffer
+go.uber.org/zap/internal/bufferpool
+go.uber.org/zap/internal/color
+go.uber.org/zap/internal/exit
+go.uber.org/zap/zapcore

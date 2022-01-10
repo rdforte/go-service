@@ -2,9 +2,9 @@ module github.com/rdforte/go-service
 
 go 1.17
 
-require go.uber.org/automaxprocs v1.4.0
+require go.uber.org/zap v1.20.0
 
 require (
-	github.com/davecgh/go-spew v1.1.1 // indirect
-	gopkg.in/yaml.v2 v2.4.0 // indirect
+	go.uber.org/atomic v1.7.0 // indirect
+	go.uber.org/multierr v1.6.0 // indirect
 )

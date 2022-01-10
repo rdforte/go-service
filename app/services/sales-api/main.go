@@ -1,28 +1,48 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"os"
-	"os/signal"
-	"runtime"
-	"syscall"
 
-	// Automatically set GOMAXPROCS to match Linux container CPU quota.
-	_ "go.uber.org/automaxprocs"
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 var build = "develop"
 
 func main() {
-	// tells us the number of cpu's that can be executing at the same time / number of goroutines that can run in parallel at the same time.
-	g := runtime.GOMAXPROCS(0)
+	log, err := initLogger("SALES-API")
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+	defer log.Sync()
 
-	log.Printf("starting service build[%s] CPU[%d]", build, g)
-	defer log.Println("service ended")
+	// Perform startup and shutdown sequence.
+	if err := run(log); err != nil {
+		log.Errorw("startup", "ERROR", err)
+		os.Exit(1)
+	}
+}
 
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM) // SIGTERM is what K8s sends for the shutdown
+func run(log *zap.SugaredLogger) error {
+	return nil
+}
 
-	<-shutdown
-	log.Println("stopping service")
+// Construct the application logger.
+func initLogger(service string) (*zap.SugaredLogger, error) {
+	config := zap.NewProductionConfig()
+	config.OutputPaths = []string{"stdout"}
+	config.EncoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	config.DisableStacktrace = true
+	config.InitialFields = map[string]interface{}{
+		"service": service,
+	}
+
+	log, err := config.Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return log.Sugar(), nil
 }
