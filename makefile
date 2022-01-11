@@ -3,19 +3,15 @@
 
 SHELL := /bin/bash
 
-tidy:
-	go mod tidy
-	go mod vendor
-
 run:
-	go run main.go
+	go run app/services/sales-api/main.go | go run app/tooling/logfmt/main.go
 
 # ======================================================
 # Build Containers
 
 VERSION := 1.0
 
-build-all: sales-api
+all: sales-api
 
 # Build the docker image.
 sales-api:
@@ -53,14 +49,13 @@ kind-load:
 kind-apply:
 	kustomize build zarf/k8s/kind/sales-pod | kubectl apply -f -
 
-kind-update: 
-	build-all kind-load kind-restart
+kind-update: all kind-load kind-restart
 
 kind-restart: 
-	kubectl rollout restart deployment sales-pod	
+	kubectl rollout restart deployment sales-pod
 
 # load in the new image to kind and then apply it
-kind-update-apply: build-all kind-load kind-apply
+kind-update-apply: all kind-load kind-apply
 
 kind-describe:
 	kubectl describe pod -l app=sales
@@ -73,7 +68,7 @@ kind-status:
 
 # get the logs for the service
 kind-logs:
-	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system
+	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system | go run app/tooling/logfmt/main.go
 
 # ======================================================
 # Module Support
