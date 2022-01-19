@@ -1,0 +1,10 @@
+version:
+  svn: "develop"
+  desc: "copy right info here"
+web:
+  readTimeout: 5
+  writeTimeout: 10
+  idleTimeout: 120
+  shutdownTimeout: 20
+  apiHost: ":3000"
+  debugHost: ":4000"

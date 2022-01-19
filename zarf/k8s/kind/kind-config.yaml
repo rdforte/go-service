@@ -1,2 +1,10 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+# we need this to map the ports on our local machine. This tells kind to do it ie 3000:3000
+nodes:
+- role: control-plane
+  extraPortMappings:
+  - containerPort: 3000
+    hostPort: 3000
+  - containerPort: 4000
+    hostPort: 4000

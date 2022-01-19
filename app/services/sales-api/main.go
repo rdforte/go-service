@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/rdforte/go-service/app/services/sales-api/handlers"
 	"github.com/spf13/viper"
 	_ "go.uber.org/automaxprocs"
 	"go.uber.org/automaxprocs/maxprocs"
@@ -45,50 +47,39 @@ func run(log *zap.SugaredLogger) error {
 		return fmt.Errorf("maxprocs: %w", err)
 	}
 
-	// log.Infow("startup", "GOMAXPROCS", runtime.GOMAXPROCS(0))
-
 	// =========================================================================
 	// CONFIGURATION
 
 	type Config struct {
 		Version struct {
-			SVN  string `json:"svn"`
-			Desc string `json:"desc"`
+			SVN  string `yaml:"svn"`
+			Desc string `yaml:"desc"`
 		}
-		// web struct {
-		// 	readTimeout     int
-		// 	writeTimeout    int
-		// 	idleTimeout     int
-		// 	shutdownTimeout int
-		// 	apiHost         string
-		// 	debugHost       string
-		// }
+		Web struct {
+			ReadTimeout     int    `yaml:"readTimeout"`
+			WriteTimeout    int    `yaml:"writeTimeout"`
+			IdleTimeout     int    `yaml:"idleTimeout"`
+			ShutdownTimeout int    `yaml:"shutdownTimeout"`
+			ApiHost         string `yaml:"apiHost"`
+			DebugHost       string `yaml:"debugHost"`
+		}
 	}
 
-	conf := &Config{}
+	cfg := &Config{}
 
-	viper.AddConfigPath("./app/config")
+	viper.AddConfigPath("../../config/")
 	viper.SetConfigName("config")
-	viper.SetConfigType("json")
+	viper.SetConfigType("yaml")
 
 	if err := viper.ReadInConfig(); err != nil {
-		log.Infow("error reading config", "error", err)
+		log.Errorw("error reading config", "ERROR", err)
 	}
 
-	if err := viper.Unmarshal(&conf); err != nil {
-		log.Infow("err unmarshaling confing", "error", err)
+	viper.Set("version.svn", build)
+
+	if err := viper.Unmarshal(&cfg); err != nil {
+		log.Errorw("err unmarshaling confing", "ERROR", err)
 	}
-	// ver := viper.Get("version")
-	fmt.Println("--->", *&conf.Version.SVN)
-	// const prefix = "SALES"
-	// help, err := conf.ParseOSArgs(prefix, &cfg)
-	// if err != nil {
-	// 	if errors.Is(err, conf.ErrHelpWanted) {
-	// 		fmt.Println(help)
-	// 		return nil
-	// 	}
-	// 	return fmt.Errorf("parsing config: %w", err)
-	// }
 
 	// =========================================================================
 	// APP STARTING
@@ -96,15 +87,24 @@ func run(log *zap.SugaredLogger) error {
 	log.Infow("starting service", "version", build)
 	defer log.Infow("shutdown complete")
 
-	// out, err := conf.String(&cfg)
-	// if err != nil {
-	// 	return fmt.Errorf("generating config for output: %w", err)
-	// }
-	// log.Infow("startup", "config", out)
-
 	// =========================================================================
 	// APP STARTING
-	log.Infow("startup", "status", "debug router started", "host")
+	log.Infow("startup", "status", "debug router started", "host", cfg.Web.DebugHost)
+
+	/** The Debug function returns a mux to listen and serve on for all the debug
+	related endpoints. This includes the standard library endpoints.
+	*/
+	debugMux := handlers.DebugStandardLibraryMux()
+
+	// start the service listening for debug requests.
+	// not concerned about shutting this down with load shedding.
+	go func() {
+		if err := http.ListenAndServe(cfg.Web.DebugHost, debugMux); err != nil {
+			log.Errorw("shutdown", "status", "debug router closed", "host", cfg.Web.DebugHost, "ERROR", err)
+		}
+	}()
+
+	// =========================================================================
 
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)

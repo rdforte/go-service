@@ -49,10 +49,9 @@ kind-load:
 kind-apply:
 	kustomize build zarf/k8s/kind/sales-pod | kubectl apply -f -
 
-kind-update: all kind-load kind-restart
+kind-restart: kubectl rollout restart deployment sales-pod
 
-kind-restart: 
-	kubectl rollout restart deployment sales-pod
+kind-update: all kind-load kind-restart
 
 # load in the new image to kind and then apply it
 kind-update-apply: all kind-load kind-apply
