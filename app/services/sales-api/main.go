@@ -1,11 +1,14 @@
 package main
 
 import (
+	"expvar"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	_ "expvar"
 
 	"github.com/rdforte/go-service/app/services/sales-api/handlers"
 	"github.com/spf13/viper"
@@ -86,6 +89,9 @@ func run(log *zap.SugaredLogger) error {
 
 	log.Infow("starting service", "version", build)
 	defer log.Infow("shutdown complete")
+
+	// set the build number when identifying metrics in expvar
+	expvar.NewString("build").Set(build)
 
 	// =========================================================================
 	// APP STARTING
