@@ -1,12 +1,14 @@
 package main
 
 import (
+	"context"
 	"expvar"
 	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	_ "expvar"
 
@@ -112,9 +114,61 @@ func run(log *zap.SugaredLogger) error {
 
 	// =========================================================================
 
+	// Macke a channel to listen for an interrupt or terminate signal from the OS.
+	// Use a buffered channel because the signal package requires it.
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-	<-shutdown
+
+	// Construct a server to service the requests against a mux
+	api := http.Server{
+		Addr:         cfg.Web.ApiHost,
+		Handler:      nil,
+		ReadTimeout:  time.Duration(cfg.Web.ReadTimeout),
+		WriteTimeout: time.Duration(cfg.Web.WriteTimeout),
+		IdleTimeout:  time.Duration(cfg.Web.IdleTimeout),
+		ErrorLog:     zap.NewStdLog(log.Desugar()),
+	}
+
+	// Make a channel to listen for erros coming from the listener.
+	// Use a buffered channel so the goroutine can exit if we don't collect this error.
+	// When we shutdown the server ListenAndServe can return straight away because we have a buffer channel of 1.
+	/** If it was unbuffered then then sender and reciever of the channel need to be in sync and because we are
+	running the shutdown case in the select with a timeout then that wont be recieving and therefore will block the return
+	of the ListenAndServe when its time to shutdown. Because the channel is buffered and there is some buffer space available
+	then the ListenAndServe can send the error to the serverErrors channel without there needing to be a receiver waiting to
+	receive on the other side therefore allowing the shutdown of listenAndServe to start as soon as we signal the shutdown of the
+	server.
+	*/
+	serverErrors := make(chan error, 1)
+
+	// Start the service listening for api requests.
+	go func() {
+		log.Infow("startup", "status", "api router started", "host", api.Addr)
+		serverErrors <- api.ListenAndServe()
+	}()
+
+	// =========================================================================
+	// Shutdown
+
+	// Blocking main and waiting for shutdown.
+	select {
+	case err := <-serverErrors:
+		return fmt.Errorf("server error: %w", err)
+	case sig := <-shutdown:
+		log.Infow("shutdown", "status", "shutdown started", "signal", sig)
+		defer log.Infow("shutdown", "status", "shutdown complete", "signal", sig)
+
+		// Give outstanding requests a deadline for completion.
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(cfg.Web.ShutdownTimeout))
+		defer cancel()
+
+		// Asking listener to shutdown and shed load.
+		// Shutdown is blocking and will take the context of the timeout.
+		if err := api.Shutdown(ctx); err != nil {
+			api.Close() // if the shutdown times out then close server manually.
+			return fmt.Errorf("could not stop server gracefully: %w", err)
+		}
+	}
 
 	return nil
 }

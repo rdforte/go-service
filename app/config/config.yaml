@@ -2,9 +2,10 @@ version:
   svn: "develop"
   desc: "copy right info here"
 web:
-  readTimeout: 5
-  writeTimeout: 10
-  idleTimeout: 120
-  shutdownTimeout: 20
+  # Times are in nanaseconds to allow for conversion to seconds for type time.Duration
+  readTimeout: 5000000000 # 5 seconds
+  writeTimeout: 10000000000 # 10 seconds
+  idleTimeout: 120000000000 # 120 seconds
+  shutdownTimeout: 20000000000 # 20 seconds
   apiHost: ":3000"
   debugHost: ":4000"
