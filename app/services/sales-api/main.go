@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"expvar"
 	"fmt"
 	"net/http"
@@ -85,6 +87,18 @@ func run(log *zap.SugaredLogger) error {
 	if err := viper.Unmarshal(&cfg); err != nil {
 		log.Errorw("err unmarshaling confing", "ERROR", err)
 	}
+
+	// format the config to be pretty when logged so we can easily identify the configuration of the service.
+	src, err := json.Marshal(cfg)
+	if err != nil {
+		log.Errorw("err marshaling config", "ERROR", err)
+	}
+	dst := &bytes.Buffer{}
+	if err := json.Indent(dst, src, "", " "); err != nil {
+		log.Errorw("can not format config", "ERROR", err)
+	}
+
+	log.Infow("Setting up service with config", "config", dst.String())
 
 	// =========================================================================
 	// APP STARTING
