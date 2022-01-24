@@ -73,7 +73,7 @@ kind-status:
 
 # get the logs for the service
 kind-logs:
-	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system | go run app/tooling/logfmt/main.go
+	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system
 
 # ======================================================
 # Module Support
