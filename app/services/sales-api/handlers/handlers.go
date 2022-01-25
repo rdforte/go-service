@@ -5,7 +5,6 @@ supported by the web api.
 package handlers
 
 import (
-	"encoding/json"
 	"expvar"
 	"net/http"
 	"net/http/pprof"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/debug/checkgrp"
+	"github.com/rdforte/go-service/app/services/sales-api/handlers/v1/testgrp"
 	"go.uber.org/zap"
 )
 
@@ -67,14 +67,11 @@ type APIMuxConfig struct {
 func APIMux(cfg APIMuxConfig) http.Handler {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/test", func(w http.ResponseWriter, r *http.Request) {
-		status := struct {
-			Status string `json:"status"`
-		}{
-			Status: "OK",
-		}
-		json.NewEncoder(w).Encode(status)
-	}).Methods("GET")
+	tgh := testgrp.Handlers{
+		Log: cfg.Log,
+	}
+
+	r.HandleFunc("/v1/test", tgh.Test).Methods("GET")
 
 	return r
 }

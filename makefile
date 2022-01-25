@@ -57,9 +57,10 @@ kind-apply:
 kind-restart: 
 	kubectl -n sales-system rollout restart deployment sales-pod
 
+# Only need to run this when change application logic
 kind-update: all kind-load kind-restart
 
-# load in the new image to kind and then apply it
+# load in the new image to kind and then apply it. Use when make changes to k8s, Docker.
 kind-update-apply: all kind-load kind-apply
 
 kind-describe:
