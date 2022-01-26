@@ -12,6 +12,7 @@ import (
 
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/debug/checkgrp"
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/v1/testgrp"
+	"github.com/rdforte/go-service/business/web/mid"
 	"github.com/rdforte/go-service/foundation/web"
 	"go.uber.org/zap"
 )
@@ -65,7 +66,7 @@ type APIMuxConfig struct {
 
 // APIMux constructs an http.Handler with all application routes defined.
 func APIMux(cfg APIMuxConfig) *web.App {
-	r := web.NewApp(cfg.Shutdown)
+	r := web.NewApp(cfg.Shutdown, mid.Logger(cfg.Log))
 
 	// Load the routes for the different versions of the API.
 	v1(r, cfg)

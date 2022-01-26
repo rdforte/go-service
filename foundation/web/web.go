@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 	"syscall"
+	"time"
 
 	/**
 	  Currently we are embedding gorilla/mux as the main mux and hiding this away through the App struct.
 	  This gives us the ability to easily switch over the mux by just changing the embedding
 	  and some minor api logic in the foundation/web layer.
 	*/
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -64,9 +66,19 @@ func (a *App) handleReq(path string, group string, httpMethod string, handler Ha
 		// PRE CODE PROCESSING
 		ctx := r.Context()
 
+		v := Values{
+			TracedID: uuid.New().String(),
+			Now:      time.Now(),
+		}
+
+		ctx = context.WithValue(ctx, key, &v)
+
 		// Call the wrapped handler.
 		if err := handler(ctx, w, r); err != nil {
-			// ERROR HANDLING
+			// The Error should not reach the outer most handler. If it does it means we have an issue with our system.
+			// In this case signal shutdown.
+			a.SignalShutdown()
+			return
 		}
 
 		// POST CODE PROCESSING

@@ -21,7 +21,6 @@ func (h *Handlers) Test(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	statusCode := http.StatusOK
-	h.Log.Infow("readiness", "statusCode", statusCode, "method", r.Method, "path", r.URL.Path, "remoteaddr", r.RemoteAddr)
 
 	return web.Respond(ctx, w, status, statusCode)
 }

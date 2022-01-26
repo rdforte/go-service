@@ -32,6 +32,9 @@ sales-api:
 
 KIND_CLUSTER := ryan-starter-cluster
 
+# Build the image, start the cluster and then load the image into the cluster.
+kind-start: all kind-up kind-load kind-apply
+
 # Kind release used for our project: https://github.com/kubernetes-sigs/kind/releases/tag/v0.11.1
 # The image used below was copied by the above link and supports both amd64 and arm64.
 kind-up:
