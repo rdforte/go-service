@@ -2,9 +2,9 @@ package testgrp
 
 import (
 	"context"
-	"encoding/json"
 	"net/http"
 
+	"github.com/rdforte/go-service/foundation/web"
 	"go.uber.org/zap"
 )
 
@@ -21,9 +21,7 @@ func (h *Handlers) Test(ctx context.Context, w http.ResponseWriter, r *http.Requ
 	}
 
 	statusCode := http.StatusOK
-	w.WriteHeader(statusCode)
-	json.NewEncoder(w).Encode(status)
-
 	h.Log.Infow("readiness", "statusCode", statusCode, "method", r.Method, "path", r.URL.Path, "remoteaddr", r.RemoteAddr)
-	return nil
+
+	return web.Respond(ctx, w, status, statusCode)
 }

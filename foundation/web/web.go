@@ -27,13 +27,15 @@ data/logic on this App struct.
 type App struct {
 	*mux.Router
 	shutdown chan os.Signal
+	mw       []Middleware
 }
 
 // NewApp creates an App vaue that handles a set of routes for the application.
-func NewApp(shutdown chan os.Signal) *App {
+func NewApp(shutdown chan os.Signal, mw ...Middleware) *App {
 	return &App{
 		mux.NewRouter(),
 		shutdown,
+		mw,
 	}
 }
 
@@ -43,17 +45,26 @@ func (a *App) SignalShutdown() {
 }
 
 // handleReq is the main method we use to build are App based networking handlers.
-func (a *App) handleReq(path string, group string, httpMethod string, handler Handler) {
+func (a *App) handleReq(path string, group string, httpMethod string, handler Handler, mw ...Middleware) {
 	p := path
 	if group != "" {
 		p = fmt.Sprintf("/%s%s", group, path)
 	}
+
+	/**
+	First wrap handler specific middleware.
+	Second add the app specific middleware after, Which results in the app specific middleware being executed
+	prior to handler specific middleware.
+	*/
+	handler = wrapMiddleWare(mw, handler)
+	handler = wrapMiddleWare(a.mw, handler)
 
 	a.HandleFunc(p, func(w http.ResponseWriter, r *http.Request) {
 
 		// PRE CODE PROCESSING
 		ctx := r.Context()
 
+		// Call the wrapped handler.
 		if err := handler(ctx, w, r); err != nil {
 			// ERROR HANDLING
 		}
@@ -66,38 +77,38 @@ func (a *App) handleReq(path string, group string, httpMethod string, handler Ha
 Get handler for handling all http GET requests.
 Calls to this handler are used for Reading data.
 */
-func (a *App) Get(path string, group string, handler Handler) {
-	a.handleReq(path, group, http.MethodGet, handler)
+func (a *App) Get(path string, group string, handler Handler, mw ...Middleware) {
+	a.handleReq(path, group, http.MethodGet, handler, mw...)
 }
 
 /**
 Post handler for handling all http POST requests.
 Calls to this handler are used for writing data.
 */
-func (a *App) Post(path string, group string, handler Handler) {
-	a.handleReq(path, group, http.MethodPost, handler)
+func (a *App) Post(path string, group string, handler Handler, mw ...Middleware) {
+	a.handleReq(path, group, http.MethodPost, handler, mw...)
 }
 
 /**
 Patch handler for handling all http PATCH requests.
 Calls to this handler are used to update/modify an existing resource.
 */
-func (a *App) Patch(path string, group string, handler Handler) {
-	a.handleReq(path, group, http.MethodPatch, handler)
+func (a *App) Patch(path string, group string, handler Handler, mw ...Middleware) {
+	a.handleReq(path, group, http.MethodPatch, handler, mw...)
 }
 
 /**
 Put handler for handling all http PUT requests.
 Calls to this handler are used for replacing/overriding an existing resource.
 */
-func (a *App) Put(path string, group string, handler Handler) {
-	a.handleReq(path, group, http.MethodPut, handler)
+func (a *App) Put(path string, group string, handler Handler, mw ...Middleware) {
+	a.handleReq(path, group, http.MethodPut, handler, mw...)
 }
 
 /**
 Delete handler for handling all http DELETE requests.
 Calls to this handler are used for deleting a resource.
 */
-func (a *App) Delete(path string, group string, handler Handler) {
-	a.handleReq(path, group, http.MethodPut, handler)
+func (a *App) Delete(path string, group string, handler Handler, mw ...Middleware) {
+	a.handleReq(path, group, http.MethodPut, handler, mw...)
 }
