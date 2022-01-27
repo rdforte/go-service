@@ -10,7 +10,11 @@ import (
 )
 
 func Logger(log *zap.SugaredLogger) web.Middleware {
+
+	// The middleware function to be executed
 	m := func(handler web.Handler) web.Handler {
+
+		// Create the handler that will be attached to the middleware chain
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
 			// If the context is missing this value, request for the service to be shutdonw gracefuly.

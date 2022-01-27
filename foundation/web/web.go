@@ -78,7 +78,6 @@ func (a *App) handleReq(path string, group string, httpMethod string, handler Ha
 			// The Error should not reach the outer most handler. If it does it means we have an issue with our system.
 			// In this case signal shutdown.
 			a.SignalShutdown()
-			return
 		}
 
 		// POST CODE PROCESSING
