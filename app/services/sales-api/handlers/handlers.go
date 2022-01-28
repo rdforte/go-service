@@ -66,7 +66,14 @@ type APIMuxConfig struct {
 
 // APIMux constructs an http.Handler with all application routes defined.
 func APIMux(cfg APIMuxConfig) *web.App {
-	r := web.NewApp(cfg.Shutdown, mid.Logger(cfg.Log))
+
+	// set up the web app with app specific middleware
+	// Panics must always be at the end so that it is the first middleware to be called around the
+	// handler in case there is a panic within the handler we can handle this.
+	r := web.NewApp(cfg.Shutdown,
+		mid.Logger(cfg.Log),
+		mid.Errors(cfg.Log),
+		mid.Panics())
 
 	// Load the routes for the different versions of the API.
 	v1(r, cfg)
