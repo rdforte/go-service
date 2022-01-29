@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"runtime/debug"
 
+	"github.com/rdforte/go-service/business/sys/metrics"
 	"github.com/rdforte/go-service/foundation/web"
 )
 
@@ -32,6 +33,9 @@ func Panics() web.Middleware {
 					// Because we are in a defer statement we have to assign the error to the err variable
 					// as a means of returning the error to the calling function.
 					err = fmt.Errorf("PANIC [%v] TRACE [%s]", rec, string(trace))
+
+					// update the metrics stored in the context.
+					metrics.AddPanics(ctx)
 				}
 			}()
 

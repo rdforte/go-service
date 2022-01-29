@@ -3,13 +3,23 @@
 
 SHELL := /bin/bash
 
+# Run the app as is.
+run:
+	go run app/services/sales-api/main.go | go run app/tooling/logfmt/main.go
+
 # ==============================================================================
 # Testing running system
 
-# expvarmon -ports=":4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.Alloc"
+# Brings up a GUI in your terminal for the metrics of the current service.
+# Make sure to run metrics from the root of the project or copy and paste the command into terminal.
+# You will need the following: https://github.com/divan/expvarmon
+metrics: 
+	expvarmon -ports=":4000" -vars="build,requests,goroutines,errors,panics,mem:memstats.Alloc"
 
-run:
-	go run app/services/sales-api/main.go | go run app/tooling/logfmt/main.go
+# For testing load on the service.
+# You will need the following: https://github.com/rakyll/hey
+load-test:
+	hey -m GET -c 100 -n 10000 http://localhost:3000/v1/test
 
 # ======================================================
 # Build Containers

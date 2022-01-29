@@ -55,9 +55,7 @@ func Set(ctx context.Context) context.Context {
 // AddGoroutines increments the goroutines metric by 1.
 func AddGoroutines(ctx context.Context) {
 	if v, ok := ctx.Value(key).(*metrics); ok {
-		if v.goroutines.Value()%100 == 0 {
-			v.goroutines.Add(1)
-		}
+		v.goroutines.Add(1)
 	}
 }
 
