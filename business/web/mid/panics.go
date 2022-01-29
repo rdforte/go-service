@@ -25,6 +25,7 @@ func Panics() web.Middleware {
 			defer func() {
 				if rec := recover(); rec != nil {
 
+					// get the stack trace for the logs to help with debugging the panic
 					trace := debug.Stack()
 
 					// Stack trace will be provided.
