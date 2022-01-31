@@ -7,8 +7,16 @@ SHELL := /bin/bash
 run:
 	go run app/services/sales-api/main.go | go run app/tooling/logfmt/main.go
 
-# ==============================================================================
+# Generate the private and public pem files.
+admin:
+	go run app/tooling/admin/main.go
+
+# ============================================================================================================
 # Testing running system
+
+# To generate a private/public key PEM file.
+# openssl genpkey -algorithm RSA -out private.pem -pkeyopt rsa_keygen_bits:2048
+# openssl rsa -pubout -in private.pem -out public.pem
 
 # Brings up a GUI in your terminal for the metrics of the current service.
 # Make sure to run metrics from the root of the project or copy and paste the command into terminal.
@@ -21,7 +29,7 @@ metrics:
 load-test:
 	hey -m GET -c 100 -n 10000 http://localhost:3000/v1/test
 
-# ======================================================
+# ============================================================================================================
 # Build Containers
 
 VERSION := 1.0
@@ -37,7 +45,7 @@ sales-api:
 		--build-arg BUILD_DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"` \
 		.
 
-# ======================================================
+# ============================================================================================================
 # Running from within k8s/kind
 
 KIND_CLUSTER := ryan-starter-cluster
@@ -89,7 +97,7 @@ kind-status:
 kind-logs:
 	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system
 
-# ======================================================
+# ============================================================================================================
 # Module Support
 
 tidy:
