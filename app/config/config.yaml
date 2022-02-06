@@ -9,3 +9,5 @@ web:
   shutdownTimeout: 20000000000 # 20 seconds
   apiHost: ":3000"
   debugHost: ":4000"
+auth:
+  activeKID: "7e1293da-733d-42f0-9ff5-b2c505c50bdc"

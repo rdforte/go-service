@@ -25,7 +25,7 @@ func main() {
 
 func genToken() error {
 
-	file, err := os.Open("zarf/keys/local-secret.pem")
+	file, err := os.Open("zarf/keys/7e1293da-733d-42f0-9ff5-b2c505c50bdc.pem")
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func genToken() error {
 	// set Key Identifier as we can have multiple keys in rotation and need to know which one to sign.
 	// kid tells us what public key to use for signing
 	// use the private key file name as the kid
-	token.Header["kid"] = "local-secret"
+	token.Header["kid"] = "7e1293da-733d-42f0-9ff5-b2c505c50bdc"
 
 	tokenStr, err := token.SignedString(privateKey)
 	if err != nil {

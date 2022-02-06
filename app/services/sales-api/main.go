@@ -15,6 +15,8 @@ import (
 	_ "expvar"
 
 	"github.com/rdforte/go-service/app/services/sales-api/handlers"
+	"github.com/rdforte/go-service/business/sys/auth"
+	"github.com/rdforte/go-service/foundation/keystore"
 	"github.com/spf13/viper"
 	_ "go.uber.org/automaxprocs"
 	"go.uber.org/automaxprocs/maxprocs"
@@ -45,7 +47,7 @@ func main() {
 }
 
 func run(log *zap.SugaredLogger) error {
-	// =========================================================================
+	// =========================================================================================================
 	// GOMAXPROCS
 
 	// Set the current number of threads for the service
@@ -54,7 +56,7 @@ func run(log *zap.SugaredLogger) error {
 		return fmt.Errorf("maxprocs: %w", err)
 	}
 
-	// =========================================================================
+	// =========================================================================================================
 	// CONFIGURATION
 
 	type Config struct {
@@ -69,6 +71,10 @@ func run(log *zap.SugaredLogger) error {
 			ShutdownTimeout int    `yaml:"shutdownTimeout"`
 			ApiHost         string `yaml:"apiHost"`
 			DebugHost       string `yaml:"debugHost"`
+		}
+		Auth struct {
+			KeysFolder string `yaml:"keysFolder"`
+			ActiveKID  string `yaml:"activeKID"`
 		}
 	}
 
@@ -100,7 +106,19 @@ func run(log *zap.SugaredLogger) error {
 
 	log.Infow("Setting up service with config", "config", dst.String())
 
-	// =========================================================================
+	// =========================================================================================================
+	// Authentication
+	ks, err := keystore.NewFS()
+	if err != nil {
+		return fmt.Errorf("reading keys: %w", err)
+	}
+
+	auth, err := auth.New(cfg.Auth.ActiveKID, ks)
+	if err != nil {
+		return fmt.Errorf("constructing auth: %w", err)
+	}
+
+	// =========================================================================================================
 	// APP STARTING
 
 	log.Infow("starting service", "version", build)
@@ -109,7 +127,7 @@ func run(log *zap.SugaredLogger) error {
 	// set the build number when identifying metrics in expvar
 	expvar.NewString("build").Set(build)
 
-	// =========================================================================
+	// =========================================================================================================
 	// APP STARTING
 	log.Infow("startup", "status", "debug router started", "host", cfg.Web.DebugHost)
 
@@ -126,7 +144,7 @@ func run(log *zap.SugaredLogger) error {
 		}
 	}()
 
-	// =========================================================================
+	// =========================================================================================================
 
 	// Macke a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
@@ -137,6 +155,7 @@ func run(log *zap.SugaredLogger) error {
 	apiMux := handlers.APIMux(handlers.APIMuxConfig{
 		Shutdown: shutdown,
 		Log:      log,
+		Auth:     auth,
 	})
 
 	// Construct a server to service the requests against a mux
@@ -167,7 +186,7 @@ func run(log *zap.SugaredLogger) error {
 		serverErrors <- api.ListenAndServe()
 	}()
 
-	// =========================================================================
+	// =========================================================================================================
 	// Shutdown
 
 	// Blocking main and waiting for shutdown.

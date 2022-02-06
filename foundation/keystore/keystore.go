@@ -4,6 +4,7 @@ package keystore
 
 import (
 	"crypto/rsa"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -20,21 +21,21 @@ func main() {
 
 // KeyStore represents an in memory store implementation of the
 // KeyStorer interface for use with the auth package
-type Keystore struct {
+type KeyStore struct {
 	mu    sync.RWMutex
 	store map[string]*rsa.PrivateKey
 }
 
 // New constructs an empty KeyStore ready for use.
-func New() *Keystore {
-	return &Keystore{
+func New() *KeyStore {
+	return &KeyStore{
 		store: make(map[string]*rsa.PrivateKey),
 	}
 }
 
 // NewMap constructs a Keystore with an initial set of keys.
-func NewMap(store map[string]*rsa.PrivateKey) *Keystore {
-	return &Keystore{
+func NewMap(store map[string]*rsa.PrivateKey) *KeyStore {
+	return &KeyStore{
 		store: store,
 	}
 }
@@ -48,13 +49,14 @@ func NewMap(store map[string]*rsa.PrivateKey) *Keystore {
 // Once you have the secrets you can then set them up in your keystore to be used by the application.
 // If you wanted to rotate the secrets every month or so you could setup a Lambda that will generate
 // a New Secret which we will then use to sign our New JWT's.
-func NewFS() (*Keystore, error) {
-	ks := Keystore{
+func NewFS() (*KeyStore, error) {
+	ks := KeyStore{
 		store: make(map[string]*rsa.PrivateKey),
 	}
 
 	// For Debug purposes read the local secret
-	file, err := os.Open("./zarf/keys/local-secret.pem")
+	// Note that when running in docker the current WORKDIR is app/services/sales-api
+	file, err := os.Open("../../../zarf/keys/7e1293da-733d-42f0-9ff5-b2c505c50bdc.pem")
 	if err != nil {
 		return nil, fmt.Errorf("NewFS: error opening file: %w", err)
 	}
@@ -72,8 +74,50 @@ func NewFS() (*Keystore, error) {
 		return nil, fmt.Errorf("NewFS: error parsing rsa private key from pem: %w", err)
 	}
 
-	ks.store["local-secret"] = privateKey
+	ks.store["7e1293da-733d-42f0-9ff5-b2c505c50bdc"] = privateKey
 
 	return &ks, nil
 
+}
+
+// Add adds a private key and combination kid to the store.
+func (ks *KeyStore) Add(privateKey *rsa.PrivateKey, kid string) {
+	ks.mu.Lock()
+	defer ks.mu.Unlock()
+
+	ks.store[kid] = privateKey
+}
+
+// Remove removes a private key and combination kid to the store.
+func (ks *KeyStore) Remove(kid string) {
+	ks.mu.Lock()
+	defer ks.mu.Unlock()
+
+	delete(ks.store, kid)
+}
+
+// PrivateKey searches the key store for a given kid and returns
+// the private key.
+func (ks *KeyStore) PrivateKey(kid string) (*rsa.PrivateKey, error) {
+	ks.mu.RLock()
+	defer ks.mu.RUnlock()
+
+	privateKey, found := ks.store[kid]
+	if !found {
+		return nil, errors.New("kid lookup failed")
+	}
+	return privateKey, nil
+}
+
+// PublicKey searches the key store for a given kid and returns
+// the public key.
+func (ks *KeyStore) PublicKey(kid string) (*rsa.PublicKey, error) {
+	ks.mu.RLock()
+	defer ks.mu.RUnlock()
+
+	privateKey, found := ks.store[kid]
+	if !found {
+		return nil, errors.New("kid lookup failed")
+	}
+	return &privateKey.PublicKey, nil
 }

@@ -12,6 +12,7 @@ import (
 
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/debug/checkgrp"
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/v1/testgrp"
+	"github.com/rdforte/go-service/business/sys/auth"
 	"github.com/rdforte/go-service/business/web/mid"
 	"github.com/rdforte/go-service/foundation/web"
 	"go.uber.org/zap"
@@ -62,6 +63,7 @@ func DebugMux(build string, log *zap.SugaredLogger) http.Handler {
 type APIMuxConfig struct {
 	Shutdown chan os.Signal
 	Log      *zap.SugaredLogger
+	Auth     *auth.Auth
 }
 
 // APIMux constructs an http.Handler with all application routes defined.
@@ -91,4 +93,5 @@ func v1(app *web.App, cfg APIMuxConfig) {
 	}
 
 	app.Get("/test", version, tgh.Test)
+	app.Get("/testauth", version, tgh.Test, mid.Authenticate(cfg.Auth), mid.Authorize("ADMIN"))
 }
