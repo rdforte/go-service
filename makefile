@@ -83,7 +83,10 @@ kind-load:
 
 # Tell K8s to apply the namespace to the deployment
 # kustomize will build the final yaml starting from the service-pod
+# we will apply the database before the sales service
 kind-apply:
+	kustomize build zarf/k8s/kind/database-pod | kubectl apply -f -
+	kubectl wait --namespace=database-system --timeout=120s --for=condition=Available deployment/database-pod
 	kustomize build zarf/k8s/kind/sales-pod | kubectl apply -f -
 
 kind-restart: 
@@ -104,9 +107,15 @@ kind-status:
 	kubectl get svc -o wide
 	kubectl get pods -o wide --watch --all-namespaces
 
+kind-status-sales:
+	kubectl get pods -o wide --watch 
+kind-status-db:
+	kubectl get pods -o wide --watch --namespace=database-system
+
 # get the logs for the service
 kind-logs:
 	kubectl logs -l app=sales --all-containers=true -f --tail=100 --namespace=sales-system
+
 
 # ============================================================================================================
 # Module Support
