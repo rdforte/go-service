@@ -27,7 +27,7 @@ func Authenticate(a *auth.Auth) web.Middleware {
 			// Parse the authorization header
 			parts := strings.Split(authStr, " ")
 			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				err := errors.New("expecting authorization header header format: bearer <token>")
+				err := errors.New("expecting authorization header format: bearer <token>")
 				return validate.NewRequestError(err, http.StatusUnauthorized)
 			}
 

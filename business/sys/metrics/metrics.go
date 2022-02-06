@@ -1,3 +1,4 @@
+// Package metrics supplies the functionality for adding the metrics data
 package metrics
 
 import (

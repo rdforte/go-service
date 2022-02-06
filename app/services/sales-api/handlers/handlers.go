@@ -1,7 +1,5 @@
-/**
-Package handlers contains the full set of handler functions and routes
-supported by the web api.
-*/
+// Package handlers contains the full set of handler functions and routes
+// supported by the web api.
 package handlers
 
 import (
@@ -18,12 +16,10 @@ import (
 	"go.uber.org/zap"
 )
 
-/**
-debugStandardLibraryMux registers all the debug routes from the standard library
-into a new mux bypassing the use of the DefaultServeMux. Using the the DefaultServeMux
-would be a security risk since a dependency could inject a handler into our service
-without us knowing about it.
-*/
+// debugStandardLibraryMux registers all the debug routes from the standard library
+// into a new mux bypassing the use of the DefaultServeMux. Using the the DefaultServeMux
+// would be a security risk since a dependency could inject a handler into our service
+// without us knowing about it.
 func debugStandardLibraryMux() *http.ServeMux {
 	mux := http.NewServeMux()
 
@@ -38,12 +34,10 @@ func debugStandardLibraryMux() *http.ServeMux {
 	return mux
 }
 
-/**
-DebugMux registers all the debug standard library routes and then custom debug
-application routes for the service. This bypasses the use of the DefaultServerMux.
-Using the DefaultServerMux would be a security risk since a dependency could inject
-a handler into our service without us knowing it.
-*/
+// DebugMux registers all the debug standard library routes and then custom debug
+// application routes for the service. This bypasses the use of the DefaultServerMux.
+// Using the DefaultServerMux would be a security risk since a dependency could inject
+// a handler into our service without us knowing it.
 func DebugMux(build string, log *zap.SugaredLogger) http.Handler {
 	mux := debugStandardLibraryMux()
 

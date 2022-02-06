@@ -11,6 +11,17 @@ run:
 admin:
 	go run app/tooling/admin/main.go
 
+
+# ============================================================================================================
+# Running Tests on local
+
+# ./... = step through whole project
+# -count=1 = ignore cache and run tests every time
+# staticcheck = make sure we consider linting in our tests
+test:
+	go test ./... -count=1
+	staticcheck -checks=all ./...
+
 # ============================================================================================================
 # Testing running system
 

@@ -15,11 +15,9 @@ type Handlers struct {
 	Log   *zap.SugaredLogger
 }
 
-/**
-Readiness checks if the database is ready and if not will return a 500 status.
-Do not respond by just returning an error because further up in the call stack
-it will interpret that as a non-trusted error.
-*/
+// Readiness checks if the database is ready and if not will return a 500 status.
+// Do not respond by just returning an error because further up in the call stack
+// it will interpret that as a non-trusted error.
 func (h Handlers) Readiness(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
@@ -35,11 +33,9 @@ func (h Handlers) Readiness(w http.ResponseWriter, r *http.Request) {
 	h.Log.Infow("readiness", "statusCode", statusCode, "method", r.Method, "path", r.URL.Path, "remoteaddr", r.RemoteAddr)
 }
 
-/**
-Liveness returns a simple status info if the service is alive. If the app is deployed
-to a k8s cluster, it will return pod, node, and namespace details via the Downward API.
-The k8s environment variables need to be set within your Pod/Deployment manifest.
-*/
+// Liveness returns a simple status info if the service is alive. If the app is deployed
+// to a k8s cluster, it will return pod, node, and namespace details via the Downward API.
+// The k8s environment variables need to be set within your Pod/Deployment manifest.
 func (h Handlers) Liveness(w http.ResponseWriter, r *http.Request) {
 	host, err := os.Hostname()
 	if err != nil {

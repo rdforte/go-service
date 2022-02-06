@@ -12,8 +12,6 @@ import (
 	"syscall"
 	"time"
 
-	_ "expvar"
-
 	"github.com/rdforte/go-service/app/services/sales-api/handlers"
 	"github.com/rdforte/go-service/business/sys/auth"
 	"github.com/rdforte/go-service/foundation/keystore"
@@ -69,7 +67,7 @@ func run(log *zap.SugaredLogger) error {
 			WriteTimeout    int    `yaml:"writeTimeout"`
 			IdleTimeout     int    `yaml:"idleTimeout"`
 			ShutdownTimeout int    `yaml:"shutdownTimeout"`
-			ApiHost         string `yaml:"apiHost"`
+			APIHost         string `yaml:"apiHost"`
 			DebugHost       string `yaml:"debugHost"`
 		}
 		Auth struct {
@@ -160,7 +158,7 @@ func run(log *zap.SugaredLogger) error {
 
 	// Construct a server to service the requests against a mux
 	api := http.Server{
-		Addr:         cfg.Web.ApiHost,
+		Addr:         cfg.Web.APIHost,
 		Handler:      apiMux,
 		ReadTimeout:  time.Duration(cfg.Web.ReadTimeout),
 		WriteTimeout: time.Duration(cfg.Web.WriteTimeout),

@@ -9,7 +9,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 )
 
-// Keylookup declares a method set of behaviour for looking up
+// KeyLookup declares a method set of behaviour for looking up
 // private and public keys for JWT use.
 type KeyLookup interface {
 	PrivateKey(kid string) (*rsa.PrivateKey, error)

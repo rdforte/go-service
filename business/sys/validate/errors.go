@@ -1,3 +1,4 @@
+// Package validate contains the support for validating error models.
 package validate
 
 import (
