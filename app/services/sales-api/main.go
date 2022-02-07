@@ -1,9 +1,7 @@
 package main
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"expvar"
 	"fmt"
 	"net/http"
@@ -14,6 +12,7 @@ import (
 
 	"github.com/rdforte/go-service/app/services/sales-api/handlers"
 	"github.com/rdforte/go-service/business/sys/auth"
+	"github.com/rdforte/go-service/business/sys/database"
 	"github.com/rdforte/go-service/foundation/keystore"
 	"github.com/spf13/viper"
 	_ "go.uber.org/automaxprocs"
@@ -74,6 +73,15 @@ func run(log *zap.SugaredLogger) error {
 			KeysFolder string `yaml:"keysFolder"`
 			ActiveKID  string `yaml:"activeKID"`
 		}
+		DB struct {
+			User         string `yaml:"user"`
+			Password     string `yaml:"password"`
+			Host         string `yaml:"host"`
+			Name         string `yaml:"name"`
+			MaxIdleConns int    `yaml:"maxIdleConns"`
+			MaxOpenConns int    `yaml:"maxOpenConns"`
+			DisableTLS   bool   `yaml:"disableTLS"`
+		}
 	}
 
 	cfg := &Config{}
@@ -92,20 +100,34 @@ func run(log *zap.SugaredLogger) error {
 		log.Errorw("err unmarshaling confing", "ERROR", err)
 	}
 
-	// format the config to be pretty when logged so we can easily identify the configuration of the service.
-	src, err := json.Marshal(cfg)
+	log.Infow("Setting up service with config", "svn", cfg.Version.SVN)
+
+	// =========================================================================================================
+	// Database Support
+
+	log.Infow("startup", "status", "initializing database support", "host", cfg.DB.Host)
+
+	db, err := database.Open(database.Config{
+		User:         cfg.DB.User,
+		Password:     cfg.DB.Password,
+		Host:         cfg.DB.Host,
+		Name:         cfg.DB.Name,
+		MaxIdleConns: cfg.DB.MaxIdleConns,
+		MaxOpenConns: cfg.DB.MaxOpenConns,
+		DisableTLS:   cfg.DB.DisableTLS,
+	})
 	if err != nil {
-		log.Errorw("err marshaling config", "ERROR", err)
-	}
-	dst := &bytes.Buffer{}
-	if err := json.Indent(dst, src, "", " "); err != nil {
-		log.Errorw("can not format config", "ERROR", err)
+		return fmt.Errorf("connecting to db: %w", err)
 	}
 
-	log.Infow("Setting up service with config", "config", dst.String())
+	defer func() {
+		log.Infow("shutdown", "status", "stopping database support", "host", cfg.DB.Host)
+		db.Close()
+	}()
 
 	// =========================================================================================================
 	// Authentication
+
 	ks, err := keystore.NewFS()
 	if err != nil {
 		return fmt.Errorf("reading keys: %w", err)
@@ -125,14 +147,15 @@ func run(log *zap.SugaredLogger) error {
 	// set the build number when identifying metrics in expvar
 	expvar.NewString("build").Set(build)
 
-	// =========================================================================================================
-	// APP STARTING
 	log.Infow("startup", "status", "debug router started", "host", cfg.Web.DebugHost)
+
+	// =========================================================================================================
+	// DEBUG MUX
 
 	/** The Debug function returns a mux to listen and serve on for all the debug
 	related endpoints. This includes the standard library endpoints.
 	*/
-	debugMux := handlers.DebugMux(build, log)
+	debugMux := handlers.DebugMux(build, log, db)
 
 	// start the service listening for debug requests.
 	// not concerned about shutting this down with load shedding.
@@ -143,6 +166,7 @@ func run(log *zap.SugaredLogger) error {
 	}()
 
 	// =========================================================================================================
+	// API MUX
 
 	// Macke a channel to listen for an interrupt or terminate signal from the OS.
 	// Use a buffered channel because the signal package requires it.
@@ -154,6 +178,7 @@ func run(log *zap.SugaredLogger) error {
 		Shutdown: shutdown,
 		Log:      log,
 		Auth:     auth,
+		DB:       db,
 	})
 
 	// Construct a server to service the requests against a mux
@@ -170,11 +195,11 @@ func run(log *zap.SugaredLogger) error {
 	// Use a buffered channel so the goroutine can exit if we don't collect this error.
 	// When we shutdown the server ListenAndServe can return straight away because we have a buffer channel of 1.
 	/** If it was unbuffered then then sender and reciever of the channel need to be in sync and because we are
-	running the shutdown case in the select with a timeout then that wont be recieving and therefore will block the return
-	of the ListenAndServe when its time to shutdown. Because the channel is buffered and there is some buffer space available
-	then the ListenAndServe can send the error to the serverErrors channel without there needing to be a receiver waiting to
-	receive on the other side therefore allowing the shutdown of listenAndServe to start as soon as we signal the shutdown of the
-	server.
+	running the shutdown case in the select with a timeout then that wont be recieving and therefore will block
+	the return of the ListenAndServe when its time to shutdown. Because the channel is buffered and there is some
+	buffer space available then the ListenAndServe can send the error to the serverErrors channel without there
+	needing to be a receiver waiting to receive on the other side therefore allowing the shutdown of
+	listenAndServe to start as soon as we signal the shutdown of the server.
 	*/
 	serverErrors := make(chan error, 1)
 

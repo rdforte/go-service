@@ -2,19 +2,25 @@
 package database
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/url"
+	"reflect"
+	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // Calls init function (sql driver)
+	"github.com/rdforte/go-service/foundation/web"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 )
 
 // Set of error variables for CRUD operations
 var (
-	ErrNotFound              = errors.New("not found")
-	ErrInvalidID             = errors.New("ID is not in its porper form")
-	ErrAuthenticationFailure = errors.New("authentication failed")
-	ErrForbidden             = errors.New("attempted action is not allowed")
+	ErrDBNotFound = errors.New("not found")
 )
 
 // Config is the required properties to use the database.
@@ -28,9 +34,9 @@ type Config struct {
 	DisableTLS   bool
 }
 
-// Open knows how to open a database connection based on the configuration
+// Open knows how to open a database connection based on the configuration.
 func Open(cfg Config) (*sqlx.DB, error) {
-	// secure socket layer for encrypted transport is required
+	// secure socket layer for encrypted transport.
 	sslMode := "require"
 
 	if cfg.DisableTLS {
@@ -48,4 +54,161 @@ func Open(cfg Config) (*sqlx.DB, error) {
 		Path:     cfg.Name,
 		RawQuery: q.Encode(),
 	}
+
+	db, err := sqlx.Open("postgres", u.String())
+	if err != nil {
+		return nil, err
+	}
+
+	db.SetMaxIdleConns(cfg.MaxIdleConns)
+	db.SetMaxOpenConns(cfg.MaxOpenConns)
+
+	return db, nil
+}
+
+// StatusCheck returns nil if it can successfuly talk to the database. It returns
+// a non nil error otherwise.
+// Ctx is run with a timeout.
+func StatusCheck(ctx context.Context, db *sqlx.DB) error {
+
+	// First check if we can ping the database.
+	var pingErr error
+	for attempts := 1; ; attempts++ {
+		pingErr = db.Ping()
+		if pingErr == nil {
+			break
+		}
+
+		time.Sleep(time.Duration(attempts) * 100 * time.Millisecond)
+
+		if ctx.Err() != nil {
+			return ctx.Err()
+		}
+	}
+
+	// Make sure we didn't timeout or get cancelled.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
+	// Run a simple query to determine connectivity.
+	// Running this query forces a round trip through the database.
+	const q = `SELECT true`
+	var tmp bool
+	return db.QueryRowContext(ctx, q).Scan(&tmp)
+}
+
+// NamedExecContext is a helper function for executing a CUD operation with logging and tracing.
+func NamedExecContext(
+	ctx context.Context,
+	log *zap.SugaredLogger,
+	db *sqlx.DB,
+	query string,
+	data interface{},
+) error {
+	q := queryString(query, data)
+	log.Infow("database.NamedExecContext", "traceid", web.GetTraceID(ctx), "query", q)
+
+	if _, err := db.NamedExecContext(ctx, query, data); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// NamedQuerySlice is a helper function for executing queries that return a
+// collection of data to be unmarshaled into a slice.
+func NamedQuerySlice(
+	ctx context.Context,
+	log *zap.SugaredLogger,
+	sqlxDB *sqlx.DB,
+	query string,
+	data interface{},
+	dest interface{},
+) error {
+	q := queryString(query, data)
+	log.Infow("database.NamedQuerySlice", "traceid", web.GetTraceID(ctx), "query", q)
+
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "database.query")
+	span.SetAttributes(attribute.String("query", q))
+	defer span.End()
+
+	val := reflect.ValueOf(dest)
+	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
+		return errors.New("must provide a pointer to a slice")
+	}
+
+	rows, err := sqlxDB.NamedQueryContext(ctx, query, data)
+	if err != nil {
+		return err
+	}
+
+	slice := val.Elem()
+	for rows.Next() {
+		v := reflect.New(slice.Type().Elem())
+		if err := rows.StructScan(v.Interface()); err != nil {
+			return err
+		}
+		slice.Set(reflect.Append(slice, v.Elem()))
+	}
+
+	return nil
+}
+
+// NamedQueryStruct is a helper function for executing queries that return a
+// single value to be unmarshalled into a struct type.
+func NamedQueryStruct(
+	ctx context.Context,
+	log *zap.SugaredLogger,
+	sqlxDB *sqlx.DB,
+	query string,
+	data interface{},
+	dest interface{},
+) error {
+	q := queryString(query, data)
+	log.Infow("database.NamedQueryStruct", "traceid", web.GetTraceID(ctx), "query", q)
+
+	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "database.query")
+	span.SetAttributes(attribute.String("query", q))
+	defer span.End()
+
+	rows, err := sqlxDB.NamedQueryContext(ctx, query, data)
+	if err != nil {
+		return err
+	}
+	if !rows.Next() {
+		return ErrDBNotFound
+	}
+
+	if err := rows.StructScan(dest); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// queryString provides a pretty print version of the query and parameters.
+func queryString(query string, args ...interface{}) string {
+	query, params, err := sqlx.Named(query, args)
+	if err != nil {
+		return err.Error()
+	}
+
+	for _, param := range params {
+		var value string
+		switch v := param.(type) {
+		case string:
+			value = fmt.Sprintf("%q", v)
+		case []byte:
+			value = fmt.Sprintf("%q", string(v))
+		default:
+			value = fmt.Sprintf("%v", v)
+		}
+		query = strings.Replace(query, "?", value, 1)
+	}
+
+	query = strings.ReplaceAll(query, "\t", "")
+	query = strings.ReplaceAll(query, "\n", " ")
+
+	return strings.Trim(query, " ")
 }

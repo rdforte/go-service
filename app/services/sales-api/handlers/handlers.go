@@ -8,6 +8,7 @@ import (
 	"net/http/pprof"
 	"os"
 
+	"github.com/jmoiron/sqlx"
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/debug/checkgrp"
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/v1/testgrp"
 	"github.com/rdforte/go-service/business/sys/auth"
@@ -38,13 +39,14 @@ func debugStandardLibraryMux() *http.ServeMux {
 // application routes for the service. This bypasses the use of the DefaultServerMux.
 // Using the DefaultServerMux would be a security risk since a dependency could inject
 // a handler into our service without us knowing it.
-func DebugMux(build string, log *zap.SugaredLogger) http.Handler {
+func DebugMux(build string, log *zap.SugaredLogger, db *sqlx.DB) http.Handler {
 	mux := debugStandardLibraryMux()
 
 	// Register debug check endpoints.
 	cgh := checkgrp.Handlers{
 		Build: build,
 		Log:   log,
+		DB:    db,
 	}
 
 	mux.HandleFunc("/debug/readiness", cgh.Readiness)
@@ -58,6 +60,7 @@ type APIMuxConfig struct {
 	Shutdown chan os.Signal
 	Log      *zap.SugaredLogger
 	Auth     *auth.Auth
+	DB       *sqlx.DB
 }
 
 // APIMux constructs an http.Handler with all application routes defined.

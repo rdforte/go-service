@@ -11,3 +11,11 @@ web:
   debugHost: ":4000"
 auth:
   activeKID: "7e1293da-733d-42f0-9ff5-b2c505c50bdc"
+db:
+  user: "root"
+  password: "postgres"
+  host: "localhost"
+  name: "postgres"
+  maxIdleConns: 0
+  maxOpenConns: 0
+  disableTLS: true
