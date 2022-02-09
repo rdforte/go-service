@@ -103,7 +103,7 @@ func run(log *zap.SugaredLogger) error {
 	log.Infow("Setting up service with config", "svn", cfg.Version.SVN)
 
 	// =========================================================================================================
-	// Database Support
+	// DATABASE SUPPORT
 
 	log.Infow("startup", "status", "initializing database support", "host", cfg.DB.Host)
 
