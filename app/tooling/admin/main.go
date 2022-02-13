@@ -25,6 +25,38 @@ func main() {
 		fmt.Println(err)
 		os.Exit(1)
 	}
+
+	err = seed()
+	if err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
+}
+
+func seed() error {
+	db, err := database.Open(database.Config{
+		User:         "root",
+		Password:     "postgres",
+		Host:         "localhost",
+		Name:         "postgres",
+		MaxIdleConns: 0,
+		MaxOpenConns: 0,
+		DisableTLS:   true,
+	})
+	if err != nil {
+		return fmt.Errorf("seed: connect database: %w", err)
+	}
+	defer db.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := schema.Seed(ctx, db); err != nil {
+		return fmt.Errorf("seed: seeding database: %w", err)
+	}
+
+	fmt.Println("seed complete")
+	return nil
 }
 
 func migrate() error {

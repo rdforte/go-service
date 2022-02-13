@@ -12,9 +12,12 @@ WORKDIR /go-service
 # Copy the source code into the container. Everything copied into service.
 COPY . ./
 
+# Build the tooling/admin binary so we can run it as an executable file
+WORKDIR /go-service/app/tooling/admin
+RUN go build -ldflags "-X main.build=${BUILD_REF}"
+
 # changed the current directory to sales-api.
 WORKDIR /go-service/app/services/sales-api
-
 RUN go build -ldflags "-X main.build=${BUILD_REF}"
 
 CMD ["./sales-api"]
