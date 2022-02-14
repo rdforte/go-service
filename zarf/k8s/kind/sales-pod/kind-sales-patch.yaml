@@ -15,11 +15,6 @@ spec:
       labels:
         app: sales 
     spec:
-      initContainers:
-      # # sales-api init container configuration. Note Admin executable is built in dockerfile.
-      # - name: init-migrate
-      #   image: sales-api-image
-      #   command: ['../../tooling/admin/admin'] # run the admin executable to migrate Database.
       containers:
       # sales-api container configuration
       - name: sales-api

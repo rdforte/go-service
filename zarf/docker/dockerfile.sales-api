@@ -1,27 +1,42 @@
 # Build the Go Binary.
-FROM golang:1.17-alpine
+FROM golang:1.17 as build_sales-api
+ENV CGO_ENABLED 0
 ARG BUILD_REF
+
+# Create the service directory and the copy the module files first and then
+# download the dependencies. If this doesn't change, we won't need to do this
+# again in future builds.
+# RUN mkdir /service
+# COPY go.* /service/
+# WORKDIR /service
+# RUN go mod download
+
+# Copy the source code into the container.
+COPY . /service
+
+# Build the admin binary.
+WORKDIR /service/app/tooling/admin
+RUN go build -ldflags "-X main.build=${BUILD_REF}"
+
+# Build the service binary.
+WORKDIR /service/app/services/sales-api
+RUN go build -ldflags "-X main.build=${BUILD_REF}"
+
+
+# Run the Go Binary in Alpine.
+FROM alpine:3.14
 ARG BUILD_DATE
-
-# we are now in the /service directory.
-WORKDIR /go-service
-# COPY go.mod ./
-# COPY go.sum ./
-# RUN go mod download -> no longer need to run as we have vendor.
-
-# Copy the source code into the container. Everything copied into service.
-COPY . ./
-
-# Build the tooling/admin binary so we can run it as an executable file
-WORKDIR /go-service/app/tooling/admin
-RUN go build -ldflags "-X main.build=${BUILD_REF}"
-
-# changed the current directory to sales-api.
-WORKDIR /go-service/app/services/sales-api
-RUN go build -ldflags "-X main.build=${BUILD_REF}"
-
+ARG BUILD_REF
+# Copy executables and zarf from previouse build into new build.
+COPY --from=build_sales-api /service/zarf/keys/. /service/zarf/keys/.
+COPY --from=build_sales-api /service/app/tooling/admin/admin /service/admin
+COPY --from=build_sales-api /service/app/services/sales-api/sales-api /service/sales-api
+COPY --from=build_sales-api /service/app/config/config.yaml /service/config.yaml
+COPY --from=build_sales-api /service/business/data/schema/migrations /service/migrations
+WORKDIR /service
 CMD ["./sales-api"]
 
 LABEL org.opencontainers.image.created="${BUILD_DATE}" \
       org.opencontainers.image.title="sales-api" \
+      org.opencontainers.image.source="https://github.com/ardanlabs/service/app/sales-api" \
       org.opencontainers.image.revision="${BUILD_REF}" \

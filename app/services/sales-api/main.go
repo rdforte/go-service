@@ -86,7 +86,7 @@ func run(log *zap.SugaredLogger) error {
 
 	cfg := &Config{}
 
-	viper.AddConfigPath("../../config/")
+	viper.AddConfigPath("./")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yaml")
 

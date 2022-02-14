@@ -56,7 +56,7 @@ func NewFS() (*KeyStore, error) {
 
 	// For Debug purposes read the local secret
 	// Note that when running in docker the current WORKDIR is app/services/sales-api
-	file, err := os.Open("../../../zarf/keys/7e1293da-733d-42f0-9ff5-b2c505c50bdc.pem")
+	file, err := os.Open("zarf/keys/7e1293da-733d-42f0-9ff5-b2c505c50bdc.pem")
 	if err != nil {
 		return nil, fmt.Errorf("NewFS: error opening file: %w", err)
 	}

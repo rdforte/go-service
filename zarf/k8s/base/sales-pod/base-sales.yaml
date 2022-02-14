@@ -22,6 +22,11 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       hostNetwork: true
       terminationGracePeriodSeconds: 60
+      initContainers:
+      # sales-api init container configuration
+      - name: init-migrate
+        image: sales-api-image
+        command: ['./admin'] # migrate the database when building app
       containers:
       - name: sales-api
         image: sales-api-image

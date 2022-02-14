@@ -25,7 +25,7 @@ func newMigration(ctx context.Context, db *sqlx.DB) (*migrate.Migrate, error) {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://business/data/schema/migrations",
+		"file://migrations",
 		"postgres", driver)
 	if err != nil {
 		return nil, fmt.Errorf("newMigration: %w", err)
