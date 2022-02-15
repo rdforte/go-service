@@ -90,5 +90,5 @@ func v1(app *web.App, cfg APIMuxConfig) {
 	}
 
 	app.Get("/test", version, tgh.Test)
-	app.Get("/testauth", version, tgh.Test, mid.Authenticate(cfg.Auth), mid.Authorize("ADMIN"))
+	app.Get("/testauth", version, tgh.Test, mid.Authenticate(cfg.Auth), mid.Authorize("ADMIN")) // Authenticated Route
 }
