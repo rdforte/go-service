@@ -43,11 +43,11 @@ func TestAuth(t *testing.T) {
 
 			// Define Claims
 			claims := auth.Claims{
-				StandardClaims: jwt.StandardClaims{
+				RegisteredClaims: jwt.RegisteredClaims{
 					Issuer:    "service project",
 					Subject:   "00000000-0000-0000-0000-000000000000",
-					ExpiresAt: time.Now().Add(time.Hour).Unix(),
-					IssuedAt:  time.Now().UTC().Unix(),
+					ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
+					IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 				},
 				Roles: []string{auth.RoleAdmin},
 			}

@@ -11,8 +11,11 @@ import (
 	"unsafe"
 
 	"github.com/ardanlabs/service/business/sys/validate"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/jmoiron/sqlx"
 	"github.com/rdforte/go-service/business/core/user/db"
+	"github.com/rdforte/go-service/business/sys/auth"
+	"github.com/rdforte/go-service/business/sys/database"
 	"go.uber.org/zap"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -36,10 +39,19 @@ func NewCore(log *zap.SugaredLogger, sqlxDB *sqlx.DB) Core {
 	}
 }
 
-// toUser conversts a db.User to User
+// toUser conversts a db.User to user.User
 func toUser(dbUsr db.User) User {
 	u := (*User)(unsafe.Pointer(&dbUsr))
 	return *u
+}
+
+// toUserSlice converts a slice of db.User to a slice of user.User
+func toUserSlice(dbUsrs []db.User) []User {
+	users := make([]User, len(dbUsrs))
+	for i, dbUsr := range dbUsrs {
+		users[i] = toUser(dbUsr)
+	}
+	return users
 }
 
 // Create inserts a new user into the database.
@@ -68,4 +80,139 @@ func (c Core) Create(ctx context.Context, nu NewUser, now time.Time) (User, erro
 	}
 
 	return toUser(dbUsr), nil
+}
+
+// Update replaces a user document in the database.
+func (c Core) Update(ctx context.Context, userID string, uu UpdateUser, now time.Time) error {
+	if err := validate.CheckID(userID); err != nil {
+		return ErrInvalidID
+	}
+
+	if err := validate.Check(uu); err != nil {
+		return fmt.Errorf("validating data: %w", err)
+	}
+
+	dbUsr, err := c.store.QueryByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, database.ErrDBNotFound) {
+			return ErrNotFound
+		}
+		return fmt.Errorf("updating user userID[%s]: %w", userID, err)
+	}
+
+	if uu.Name != nil {
+		dbUsr.Name = *uu.Name
+	}
+	if uu.Email != nil {
+		dbUsr.Email = *uu.Email
+	}
+	if uu.Roles != nil {
+		dbUsr.Roles = uu.Roles
+	}
+	if uu.Password != nil {
+		pw, err := bcrypt.GenerateFromPassword([]byte(*uu.Password), bcrypt.DefaultCost)
+		if err != nil {
+			return fmt.Errorf("generating password hash: %w", err)
+		}
+		dbUsr.PasswordHash = pw
+	}
+	dbUsr.DateUpdated = now
+
+	if err := c.store.Update(ctx, dbUsr); err != nil {
+		return fmt.Errorf("udpate: %w", err)
+	}
+
+	return nil
+}
+
+// Delete removes a user from the database.
+func (c Core) Delete(ctx context.Context, userID string) error {
+	if err := validate.CheckID(userID); err != nil {
+		return ErrInvalidID
+	}
+
+	if err := c.store.Delete(ctx, userID); err != nil {
+		return fmt.Errorf("delete: %w", err)
+	}
+
+	return nil
+}
+
+// Query retrieves a list of existing users from the database.
+func (c Core) Query(ctx context.Context, pageNumber int, rowsPerPage int) ([]User, error) {
+	dbUsers, err := c.store.Query(ctx, pageNumber, rowsPerPage)
+	if err != nil {
+		return nil, fmt.Errorf("query: %w", err)
+	}
+
+	return toUserSlice(dbUsers), nil
+}
+
+// QueryByID gets the specified user from the database.
+func (c Core) QueryByID(ctx context.Context, userID string) (User, error) {
+	if err := validate.CheckID(userID); err != nil {
+		return User{}, ErrInvalidID
+	}
+
+	dbUsr, err := c.store.QueryByID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, database.ErrDBNotFound) {
+			return User{}, ErrNotFound
+		}
+		return User{}, fmt.Errorf("query: %w", err)
+	}
+
+	return toUser(dbUsr), nil
+}
+
+// QueryByEmail gets the specified user from the database by email.
+func (c Core) QueryByEmail(ctx context.Context, email string) (User, error) {
+
+	// Add Email Validate function in validate
+	// if err := validate.Email(email); err != nil {
+	// 	return User{}, ErrInvalidEmail
+	// }
+
+	dbUsr, err := c.store.QueryByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, database.ErrDBNotFound) {
+			return User{}, ErrNotFound
+		}
+		return User{}, fmt.Errorf("query: %w", err)
+	}
+
+	return toUser(dbUsr), nil
+}
+
+// Authenticate finds a user by their email and verifies their password. On
+// success it returns a Claims User representing this user. The claims can be
+// used to generate a token for future authentication.
+func (c Core) Authenticate(ctx context.Context, now time.Time, email, password string) (auth.Claims, error) {
+	dbUsr, err := c.store.QueryByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, database.ErrDBNotFound) {
+			return auth.Claims{}, ErrNotFound
+		}
+		return auth.Claims{}, fmt.Errorf("query: %w", err)
+	}
+
+	// Compare the provided password with the saved hash. Use the bcrypt
+	// comparison function so it is cryptographically secure.
+	if err := bcrypt.CompareHashAndPassword(dbUsr.PasswordHash, []byte(password)); err != nil {
+		return auth.Claims{}, ErrAuthenticationFailure
+	}
+
+	// If we are this far the request is valid. Create some claims for the user
+	// and generate their token.
+	claims := auth.Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			Subject:   dbUsr.ID,
+			Issuer:    "service project",
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
+		},
+		Roles: dbUsr.Roles,
+	}
+
+	return claims, nil
 }

@@ -14,13 +14,14 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rdforte/go-service/business/data/schema"
+	"github.com/rdforte/go-service/business/sys/auth"
 	"github.com/rdforte/go-service/business/sys/database"
 )
 
 func main() {
 	// err := genKey()
-	// err := genToken()
-	err := migrate()
+	err := genToken()
+	// err := migrate()
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -117,15 +118,12 @@ func genToken() error {
 	// nbf (not before time): Time before which the JWT must not be accepted for processing
 	// iat (issued at time): Time at which the JWT was issued; can be used to determine age of the JWT
 	// jti (JWT ID): Unique dentifier; can be used to prevent the JWT from being replayed (allows token to be used only once)
-	claims := struct {
-		jwt.StandardClaims
-		Roles []string
-	}{
-		StandardClaims: jwt.StandardClaims{
-			Issuer:    "service project",
+	claims := auth.Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
 			Subject:   "test-user-id",
-			ExpiresAt: time.Now().Add(8760 * time.Hour).Unix(),
-			IssuedAt:  time.Now().UTC().Unix(),
+			Issuer:    "service project",
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(8760 * time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now().UTC()),
 		},
 		Roles: []string{"ADMIN"},
 	}
@@ -187,7 +185,7 @@ func genToken() error {
 	}
 
 	var parsedClaims struct {
-		jwt.StandardClaims
+		jwt.RegisteredClaims
 		Roles []string
 	}
 
