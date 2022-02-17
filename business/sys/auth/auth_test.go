@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/rdforte/go-service/business/sys/auth"
+	"github.com/rdforte/go-service/foundation/logger"
 )
 
 // Success and failure markers.
@@ -21,18 +22,21 @@ const (
 )
 
 func TestAuth(t *testing.T) {
+
+	testID := 0
+	tl := logger.NewTestLog(t, testID)
+
 	t.Log("Given the need to be able to authenticate and authorize access.")
 	{
-		testID := 0
 		t.Logf("\tTest %d:\tWhen handling a singe user.", testID)
 		{
 			// Setup Private Key
 			const keyID = "8e1293db-733d-42f0-9ff9-b2c505c50bdc"
 			privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 			if err != nil {
-				t.Fatalf("\t%s\tTest %d:\tShould be able to create a private key: %v", failed, testID, err)
+				tl.Failed("Should be able to create a private key", err)
 			}
-			t.Logf("\t%s\tTest %d:\tShould be able to create a private key.", success, testID)
+			tl.Success("Should be able to create a private key")
 
 			// Construct Auth
 			a, err := auth.New(keyID, &keyStore{pk: privateKey})
