@@ -73,7 +73,7 @@ func TestAuth(t *testing.T) {
 			tl.Success("Should have the expected number of roles")
 
 			// Check the Roles are the same
-			if exp, got := claims.Roles[0], parsedClaims.Roles[0]; exp == got {
+			if exp, got := claims.Roles[0], parsedClaims.Roles[0]; exp != got {
 				t.Logf("\t\tTest %d:\texp: %s", testID, exp)
 				t.Logf("\t\tTest %d:\tgot: %s", testID, got)
 				tl.Failed("Shoud have the expected roles", fmt.Errorf("[roles: %v]", claims.Roles))
