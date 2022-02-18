@@ -6,6 +6,7 @@ package auth_test
 import (
 	"crypto/rand"
 	"crypto/rsa"
+	"fmt"
 	"testing"
 	"time"
 
@@ -41,9 +42,9 @@ func TestAuth(t *testing.T) {
 			// Construct Auth
 			a, err := auth.New(keyID, &keyStore{pk: privateKey})
 			if err != nil {
-				t.Errorf("\t%s\tTest %d:\tShould be able to create an authenticator: %v", failed, testID, err)
+				tl.Failed("Should be able to create an authenticator", err)
 			}
-			t.Logf("\t%s\tTest %d:\tShould be able to create an authenticator.", success, testID)
+			tl.Success("Should be able to create an authenticator")
 
 			// Define Claims
 			claims := auth.Claims{
@@ -59,22 +60,22 @@ func TestAuth(t *testing.T) {
 			// Generate Token
 			token, err := a.GenerateToken(claims)
 			if err != nil {
-				t.Errorf("\t%s\tTest %d:\tShould be able to generate a JWT: %v", failed, testID, err)
+				tl.Failed("Should be able to generate a JWT", err)
 			}
-			t.Logf("\t%s\tTest %d:\tShould be able to generate a JWT.", success, testID)
+			tl.Success("Should be able to generate a JWT")
 
 			// Validate Token
 			parsedClaims, err := a.ValidateToken(token)
 			if err != nil {
-				t.Errorf("\t%s\tTest %d:\tShould be able to parse the claims: %v", failed, testID, err)
+				tl.Failed("Should be able to parse the claims", err)
 			}
-			t.Logf("\t%s\tTest %d:\tShould be able to parse the claims.", success, testID)
+			tl.Success("Should be able to parse the claims")
 
 			// Check the Roles Length are the same
 			if exp, got := len(claims.Roles), len(parsedClaims.Roles); exp != got {
 				t.Logf("\t\tTest %d:\texp: %d", testID, exp)
 				t.Logf("\t\tTest %d:\tgot: %d", testID, got)
-				t.Fatalf("\t%s\tTest %d:\tShoud have the expected number of roles: %v", failed, testID, len(claims.Roles))
+				tl.Failed("Shoud have the expected number of roles", fmt.Errorf("[#roles: %v]", len(claims.Roles)))
 			}
 			t.Logf("\t%s\tTest %d:\tShould have the expected number of roles.", success, testID)
 
@@ -82,9 +83,9 @@ func TestAuth(t *testing.T) {
 			if exp, got := claims.Roles[0], parsedClaims.Roles[0]; exp != got {
 				t.Logf("\t\tTest %d:\texp: %s", testID, exp)
 				t.Logf("\t\tTest %d:\tgot: %s", testID, got)
-				t.Fatalf("\t%s\tTest %d:\tShoud have the expected roles: %v", failed, testID, len(claims.Roles))
+				tl.Failed("Shoud have the expected roles", fmt.Errorf("[roles: %v]", claims.Roles))
 			}
-			t.Logf("\t%s\tTest %d:\tShould have the expected roles.", success, testID)
+			tl.Success("Should have the expected roles")
 		}
 	}
 
