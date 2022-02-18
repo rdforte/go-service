@@ -1,4 +1,4 @@
-package dbtests
+package dbtest
 
 import (
 	"bufio"

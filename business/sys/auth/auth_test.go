@@ -15,21 +15,14 @@ import (
 	"github.com/rdforte/go-service/foundation/logger"
 )
 
-// Success and failure markers.
-// Helped to increase verbosity in our tests.
-const (
-	success = "\u2713"
-	failed  = "\u2717"
-)
-
 func TestAuth(t *testing.T) {
 
 	testID := 0
 	tl := logger.NewTestLog(t, testID)
 
-	t.Log("Given the need to be able to authenticate and authorize access.")
+	tl.Describe("Authenticate and authorize access.")
 	{
-		t.Logf("\tTest %d:\tWhen handling a singe user.", testID)
+		tl.It("should authenticate when handling a single user.")
 		{
 			// Setup Private Key
 			const keyID = "8e1293db-733d-42f0-9ff9-b2c505c50bdc"
@@ -77,10 +70,10 @@ func TestAuth(t *testing.T) {
 				t.Logf("\t\tTest %d:\tgot: %d", testID, got)
 				tl.Failed("Shoud have the expected number of roles", fmt.Errorf("[#roles: %v]", len(claims.Roles)))
 			}
-			t.Logf("\t%s\tTest %d:\tShould have the expected number of roles.", success, testID)
+			tl.Success("Should have the expected number of roles")
 
 			// Check the Roles are the same
-			if exp, got := claims.Roles[0], parsedClaims.Roles[0]; exp != got {
+			if exp, got := claims.Roles[0], parsedClaims.Roles[0]; exp == got {
 				t.Logf("\t\tTest %d:\texp: %s", testID, exp)
 				t.Logf("\t\tTest %d:\tgot: %s", testID, got)
 				tl.Failed("Shoud have the expected roles", fmt.Errorf("[roles: %v]", claims.Roles))
