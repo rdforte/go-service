@@ -22,6 +22,9 @@ test:
 	go test ./... -count=1
 	staticcheck -checks=all ./...
 
+test-verbose:
+	go test ./... -v -count=1
+
 # ============================================================================================================
 # Testing running system
 

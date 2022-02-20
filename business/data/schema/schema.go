@@ -3,57 +3,41 @@ package schema
 
 import (
 	"context"
-	_ "embed"
+	_ "embed" // calls init function
 	"fmt"
 
-	"github.com/golang-migrate/migrate"
-	"github.com/golang-migrate/migrate/database/postgres"
+	"github.com/ardanlabs/darwin"
 	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/rdforte/go-service/business/sys/database"
 )
 
-//go:embed seed/seed.sql
-var seedDoc string
+var (
+	//go:embed sql/schema.sql
+	schemaDoc string
 
-// newMigration is responsible for setting up the migration from which we can migrate up/down
-func newMigration(ctx context.Context, db *sqlx.DB) (*migrate.Migrate, error) {
-	driver, err := postgres.WithInstance(db.DB, &postgres.Config{})
-	if err != nil {
-		return nil, fmt.Errorf("newMigration: %w", err)
+	//go:embed sql/seed.sql
+	seedDoc string
+
+	//go:embed sql/delete.sql
+	deleteDoc string
+)
+
+// Migrate attempts to bring the schema for db up to date with the migrations
+// defined in this package.
+func Migrate(ctx context.Context, db *sqlx.DB) error {
+	if err := database.StatusCheck(ctx, db); err != nil {
+		return fmt.Errorf("status check database: %w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
-		"postgres", driver)
+	driver, err := darwin.NewGenericDriver(db.DB, darwin.PostgresDialect{})
 	if err != nil {
-		return nil, fmt.Errorf("newMigration: %w", err)
+		return fmt.Errorf("construct darwin driver: %w", err)
 	}
 
-	return m, nil
-}
-
-// MigrateUp is responsible for migrating the database shema up
-func MigrateUp(ctx context.Context, db *sqlx.DB) error {
-	m, err := newMigration(ctx, db)
-	if err != nil {
-		return fmt.Errorf("MigrateUp: %w", err)
-	}
-	m.Steps(1)
-
-	return nil
-}
-
-// MigrateDown is responsible for migrating the database shema down
-func MigrateDown(ctx context.Context, db *sqlx.DB) error {
-	m, err := newMigration(ctx, db)
-	if err != nil {
-		return fmt.Errorf("MigrateUp: %w", err)
-	}
-	m.Steps(-1)
-
-	return nil
+	d := darwin.New(driver, darwin.ParseMigrations(schemaDoc))
+	return d.Migrate()
 }
 
 // Seed runs the set of seed-data queries against db. The queries are ran in a
@@ -69,6 +53,24 @@ func Seed(ctx context.Context, db *sqlx.DB) error {
 	}
 
 	if _, err := tx.Exec(seedDoc); err != nil {
+		if err := tx.Rollback(); err != nil {
+			return err
+		}
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// DeleteAll runs the set of Drop-table queries against db. The queries are ran in a
+// transaction and rolled back if any fail.
+func DeleteAll(db *sqlx.DB) error {
+	tx, err := db.Begin()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(deleteDoc); err != nil {
 		if err := tx.Rollback(); err != nil {
 			return err
 		}

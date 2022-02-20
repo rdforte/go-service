@@ -12,6 +12,7 @@ require github.com/spf13/viper v1.10.1
 require github.com/gorilla/mux v1.8.0
 
 require (
+	github.com/ardanlabs/darwin v1.3.0
 	github.com/ardanlabs/service v0.0.0-20220211204342-e3cd11bff3a5
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
 	github.com/go-playground/locales v0.14.0
@@ -42,15 +43,8 @@ require (
 )
 
 require (
-	github.com/containerd/containerd v1.5.9 // indirect
-	github.com/docker/distribution v2.8.0+incompatible // indirect
-	github.com/docker/docker v20.10.12+incompatible // indirect
-	github.com/docker/go-connections v0.4.0 // indirect
-	github.com/docker/go-units v0.4.0 // indirect
 	github.com/go-logr/logr v1.2.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
-	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.0.2 // indirect
 	go.opentelemetry.io/otel/trace v1.3.0 // indirect
 )

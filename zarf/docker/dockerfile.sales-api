@@ -39,8 +39,6 @@ COPY --from=build_sales-api /service/app/tooling/admin/admin /service/admin
 COPY --from=build_sales-api /service/app/services/sales-api/sales-api /service/sales-api
 # Copy config as this is needed for configuration.
 COPY --from=build_sales-api /service/app/config/config.yaml /service/config.yaml
-# Copy in the migrations folder as this has the schemas for the migrations.
-COPY --from=build_sales-api /service/business/data/schema/migrations /service/migrations
 
 WORKDIR /service
 CMD ["./sales-api"]
