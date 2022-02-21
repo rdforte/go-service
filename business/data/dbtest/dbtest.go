@@ -86,9 +86,9 @@ func NewUnit(t *testing.T, dbc DBContainer) (*zap.SugaredLogger, *sqlx.DB, func(
 		log.Sync()
 
 		writer.Flush()
-		fmt.Println("******************** LOGS ********************")
+		fmt.Println("******************** DB TEARDOWN LOGS ********************")
 		fmt.Print(buf.String())
-		fmt.Println("******************** LOGS ********************")
+		fmt.Println("******************** DB TEARDOWN LOGS ********************")
 	}
 
 	return log, db, teardown
