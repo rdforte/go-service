@@ -20,7 +20,7 @@ func TestAuth(t *testing.T) {
 	testID := 0
 	tl := logger.NewTestLog(t, testID)
 
-	tl.Describe("Authenticate and authorize access.")
+	tl.Describe("Authenticate and authorize access")
 	{
 		tl.It("should authenticate when handling a single user.")
 		{

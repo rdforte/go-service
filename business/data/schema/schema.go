@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	"github.com/ardanlabs/darwin"
-	_ "github.com/golang-migrate/migrate/source/file"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 	"github.com/rdforte/go-service/business/sys/database"

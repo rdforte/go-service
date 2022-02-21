@@ -36,7 +36,7 @@ func (tl *testLogger) Failed(message string, err error) {
 
 // Describe describes what it is you are testing. Use this as your first log to group your assertions.
 func (tl *testLogger) Describe(message string) {
-	tl.t.Log(light, light, " ", message, " ", light, light, "\n")
+	tl.t.Logf("%s%s \033[35m%s\033[0m %s%s\n\n", light, light, message, light, light)
 }
 
 // It is used for adding clarity to your assertions ie: `It should authenticate a single user`.
