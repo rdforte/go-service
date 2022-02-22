@@ -70,8 +70,7 @@ func run(log *zap.SugaredLogger) error {
 			DebugHost       string `yaml:"debugHost"`
 		}
 		Auth struct {
-			KeysFolder string `yaml:"keysFolder"`
-			ActiveKID  string `yaml:"activeKID"`
+			ActiveKID string `yaml:"activeKID"`
 		}
 		DB struct {
 			User         string `yaml:"user"`
