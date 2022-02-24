@@ -48,14 +48,5 @@ func (h userHandler) login(ctx context.Context, w http.ResponseWriter, r *http.R
 		Value: tok,
 	})
 
-	status := struct {
-		Status string `json:"status"`
-	}{
-		Status: "OK",
-	}
-
-	statusCode := http.StatusOK
-
-	return web.Respond(ctx, w, status, statusCode)
-
+	return web.RespondOk(ctx, w)
 }

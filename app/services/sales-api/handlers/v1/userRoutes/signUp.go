@@ -39,7 +39,7 @@ func (h userHandler) signUp(ctx context.Context, w http.ResponseWriter, r *http.
 		Email:           du.Email,
 		Password:        du.Password,
 		PasswordConfirm: du.PasswordConfirm,
-		Roles:           []string{auth.RoleUser},
+		Roles:           []string{auth.RoleUser}, // default role to user
 	}
 
 	usr, err := h.user.Create(ctx, nu, v.Now)
@@ -67,13 +67,5 @@ func (h userHandler) signUp(ctx context.Context, w http.ResponseWriter, r *http.
 		Value: tok,
 	})
 
-	status := struct {
-		Status string `json:"status"`
-	}{
-		Status: "OK",
-	}
-
-	statusCode := http.StatusOK
-
-	return web.Respond(ctx, w, status, statusCode)
+	return web.RespondOk(ctx, w)
 }

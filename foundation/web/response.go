@@ -38,3 +38,17 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, statu
 
 	return nil
 }
+
+// RespondOk is the default for responding with a http status ok and should be used for all routes
+// where all we want to do is notify the client that the request was successful.
+func RespondOk(ctx context.Context, w http.ResponseWriter) error {
+	status := struct {
+		Status string `json:"status"`
+	}{
+		Status: "OK",
+	}
+
+	statusCode := http.StatusOK
+
+	return Respond(ctx, w, status, statusCode)
+}

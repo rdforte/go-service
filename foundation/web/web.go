@@ -121,5 +121,5 @@ Delete handler for handling all http DELETE requests.
 Calls to this handler are used for deleting a resource.
 */
 func (a *App) Delete(path string, group string, handler Handler, mw ...Middleware) {
-	a.handleReq(path, group, http.MethodPut, handler, mw...)
+	a.handleReq(path, group, http.MethodDelete, handler, mw...)
 }
