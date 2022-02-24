@@ -2,15 +2,16 @@ package mid
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/rdforte/go-service/business/sys/auth"
 	"github.com/rdforte/go-service/business/sys/validate"
 	"github.com/rdforte/go-service/foundation/web"
 )
+
+// cookieKey is the key for the token when set in the cookies.
+var cookieKey = "xra789klate"
 
 // Authenticate validates a JWT from the `Authorization` header.
 func Authenticate(a *auth.Auth) web.Middleware {
@@ -22,17 +23,22 @@ func Authenticate(a *auth.Auth) web.Middleware {
 		h := func(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
 			// Expecting: bearer <token>
-			authStr := r.Header.Get("authorization")
-
-			// Parse the authorization header
-			parts := strings.Split(authStr, " ")
-			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				err := errors.New("expecting authorization header format: bearer <token>")
+			// authStr := r.Header.Get("authorization")
+			c, err := r.Cookie(cookieKey)
+			if err != nil {
 				return validate.NewRequestError(err, http.StatusUnauthorized)
 			}
 
+			// Parse the authorization header
+			// parts := strings.Split(c.Value, " ")
+			// if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			// 	err := errors.New("expecting authorization header format: bearer <token>")
+			// 	return validate.NewRequestError(err, http.StatusUnauthorized)
+			// }
+
 			// Validate that the token is signed by us
-			claims, err := a.ValidateToken(parts[1])
+			// claims, err := a.ValidateToken(parts[1])
+			claims, err := a.ValidateToken(c.Value)
 			if err != nil {
 				return validate.NewRequestError(err, http.StatusUnauthorized)
 			}

@@ -1,5 +1,4 @@
-// Package usergrp maintains the group of handlers for user access.
-package usergrp
+package userRoutes
 
 import (
 	"context"
@@ -8,19 +7,14 @@ import (
 	"net/http"
 
 	"github.com/rdforte/go-service/business/core/user"
-	"github.com/rdforte/go-service/business/sys/auth"
 	"github.com/rdforte/go-service/business/sys/validate"
 	"github.com/rdforte/go-service/foundation/web"
 )
 
-type Handlers struct {
-	User user.Core
-	Auth *auth.Auth
-}
-
+// cookieKey is the key for the token when set in the cookies.
 var cookieKey = "xra789klate"
 
-func (h Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+func (h userHandler) login(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 	v, err := web.GetValues(ctx)
 	if err != nil {
 		return web.NewShutdownError("web value missing from context")
@@ -32,7 +26,7 @@ func (h Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		return validate.NewRequestError(err, http.StatusUnauthorized)
 	}
 
-	claims, err := h.User.Authenticate(ctx, v.Now, email, pass)
+	claims, err := h.user.Authenticate(ctx, v.Now, email, pass)
 	if err != nil {
 		switch {
 		case errors.Is(err, user.ErrNotFound):
@@ -44,7 +38,7 @@ func (h Handlers) Login(ctx context.Context, w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	tok, err := h.Auth.GenerateToken(claims)
+	tok, err := h.auth.GenerateToken(claims)
 	if err != nil {
 		return fmt.Errorf("generating token: %w", err)
 	}

@@ -10,8 +10,7 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/rdforte/go-service/app/services/sales-api/handlers/debug/checkgrp"
-	"github.com/rdforte/go-service/app/services/sales-api/handlers/v1/testgrp"
-	"github.com/rdforte/go-service/app/services/sales-api/handlers/v1/usergrp"
+	"github.com/rdforte/go-service/app/services/sales-api/handlers/v1/userRoutes"
 	"github.com/rdforte/go-service/business/core/user"
 	"github.com/rdforte/go-service/business/sys/auth"
 	"github.com/rdforte/go-service/business/web/mid"
@@ -87,17 +86,10 @@ func APIMux(cfg APIMuxConfig) *web.App {
 func v1(app *web.App, cfg APIMuxConfig) {
 	const version = "v1"
 
-	tgh := testgrp.Handlers{
-		Log: cfg.Log,
-	}
+	// Register User Routes
+	userRoutes.CreateUserV1Routes(app,
+		user.NewCore(cfg.Log, cfg.DB),
+		cfg.Auth,
+	)
 
-	usrHandler := usergrp.Handlers{
-		User: user.NewCore(cfg.Log, cfg.DB),
-		Auth: cfg.Auth,
-	}
-
-	app.Post("/login", version, usrHandler.Login)
-
-	app.Get("/test", version, tgh.Test)
-	app.Get("/testauth", version, tgh.Test, mid.Authenticate(cfg.Auth), mid.Authorize("ADMIN")) // Authenticated Route
 }
