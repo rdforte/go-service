@@ -16,9 +16,7 @@ import (
 )
 
 func TestAuth(t *testing.T) {
-
-	testID := 0
-	tl := logger.NewTestLog(t, testID)
+	tl := logger.NewTestLog(t)
 
 	tl.Describe("Authenticate and authorize access")
 	{
@@ -66,16 +64,12 @@ func TestAuth(t *testing.T) {
 
 			// Check the Roles Length are the same
 			if exp, got := len(claims.Roles), len(parsedClaims.Roles); exp != got {
-				t.Logf("\t\tTest %d:\texp: %d", testID, exp)
-				t.Logf("\t\tTest %d:\tgot: %d", testID, got)
 				tl.Failed("Shoud have the expected number of roles", fmt.Errorf("[#roles: %v]", len(claims.Roles)))
 			}
 			tl.Success("Should have the expected number of roles")
 
 			// Check the Roles are the same
 			if exp, got := claims.Roles[0], parsedClaims.Roles[0]; exp != got {
-				t.Logf("\t\tTest %d:\texp: %s", testID, exp)
-				t.Logf("\t\tTest %d:\tgot: %s", testID, got)
 				tl.Failed("Shoud have the expected roles", fmt.Errorf("[roles: %v]", claims.Roles))
 			}
 			tl.Success("Should have the expected roles")

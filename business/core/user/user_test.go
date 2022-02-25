@@ -21,8 +21,7 @@ var dbc = dbtest.DBContainer{
 }
 
 func TestUser(t *testing.T) {
-	testID := 0
-	tl := logger.NewTestLog(t, testID)
+	tl := logger.NewTestLog(t)
 
 	log, db, teardown := dbtest.NewUnit(t, dbc)
 	t.Cleanup(teardown)

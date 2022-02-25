@@ -6,6 +6,10 @@ import (
 	"net/http"
 )
 
+type OK struct {
+	Status string `json:"status"`
+}
+
 // Respond converts a Go value to JSON andd send it to the client.
 func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, statusCode int) error {
 
@@ -42,9 +46,7 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, statu
 // RespondOk is the default for responding with a http status ok and should be used for all routes
 // where all we want to do is notify the client that the request was successful.
 func RespondOk(ctx context.Context, w http.ResponseWriter) error {
-	status := struct {
-		Status string `json:"status"`
-	}{
+	status := OK{
 		Status: "OK",
 	}
 
