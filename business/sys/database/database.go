@@ -13,8 +13,6 @@ import (
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq" // Calls init function (sql driver)
 	"github.com/rdforte/go-service/foundation/web"
-	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 )
 
@@ -129,10 +127,6 @@ func NamedQuerySlice(
 	q := queryString(query, data)
 	log.Infow("database.NamedQuerySlice", "traceid", web.GetTraceID(ctx), "query", q)
 
-	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "database.query")
-	span.SetAttributes(attribute.String("query", q))
-	defer span.End()
-
 	val := reflect.ValueOf(dest)
 	if val.Kind() != reflect.Ptr || val.Elem().Kind() != reflect.Slice {
 		return errors.New("must provide a pointer to a slice")
@@ -167,10 +161,6 @@ func NamedQueryStruct(
 ) error {
 	q := queryString(query, data)
 	log.Infow("database.NamedQueryStruct", "traceid", web.GetTraceID(ctx), "query", q)
-
-	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "database.query")
-	span.SetAttributes(attribute.String("query", q))
-	defer span.End()
 
 	rows, err := sqlxDB.NamedQueryContext(ctx, query, data)
 	if err != nil {
